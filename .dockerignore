@@ -1,0 +1,6 @@
+.git
+target
+tmp
+coverage
+.env
+.env.*
