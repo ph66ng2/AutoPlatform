@@ -16,4 +16,4 @@ ENV APP_ENV=local \
     RUST_LOG=info
 EXPOSE 8080
 STOPSIGNAL SIGTERM
-ENTRYPOINT ["/usr/local/bin/api"]
+CMD ["/usr/local/bin/api"]
