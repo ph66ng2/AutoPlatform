@@ -1,0 +1,21 @@
+services:
+  api:
+    build: .
+    image: autoplatform:local
+    environment:
+      APP_ENV: local
+      HTTP_BIND: 0.0.0.0:8080
+      RUST_LOG: info
+    ports:
+      - "8080:8080"
+  worker:
+    image: autoplatform:local
+    command: ["/usr/local/bin/worker"]
+    depends_on:
+      - api
+    environment:
+      APP_ENV: local
+      HTTP_BIND: 0.0.0.0:8081
+      RUST_LOG: info
+    ports:
+      - "8081:8081"

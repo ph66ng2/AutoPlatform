@@ -79,7 +79,7 @@ case "$command" in
     [[ "$ok" == "true" ]] || { printf 'Ticket %s ainda está bloqueado.\n' "$id" >&2; exit 65; }
     git fetch origin main
     root=$(git rev-parse --show-toplevel)
-    safe=$(tr '[:upper:]' '[:lower:]' <<<"$id" | tr -cs 'a-z0-9' '-')
+    safe=$(printf '%s' "$id" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-')
     branch="agent/$safe"
     target="$root/../$(basename "$root")-$safe"
     git worktree add -b "$branch" "$target" origin/main

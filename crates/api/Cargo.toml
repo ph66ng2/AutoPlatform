@@ -1,0 +1,31 @@
+[package]
+name = "ap-api"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "api"
+path = "src/main.rs"
+
+[dependencies]
+ap-identity = { path = "../identity" }
+ap-entitlements = { path = "../entitlements" }
+ap-billing = { path = "../billing" }
+ap-inventory = { path = "../inventory" }
+ap-sales = { path = "../sales" }
+ap-payments = { path = "../payments" }
+ap-receivables = { path = "../receivables" }
+ap-banking = { path = "../banking" }
+ap-fiscal = { path = "../fiscal" }
+ap-integration = { path = "../integration" }
+ap-portal = { path = "../portal" }
+ap-audit = { path = "../audit" }
+ap-infra = { path = "../infra" }
+ap-kernel = { path = "../kernel" }
+tokio.workspace = true
+
+[lints]
+workspace = true
