@@ -1,0 +1,127 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/ci/fmt.sh
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/ci/clippy.sh
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/ci/test.sh
+
+  migrations:
+    name: migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: autoplatform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d autoplatform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      AUTO_PLATFORM_CI_DATABASE: "1"
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: ci
+      PGPASSWORD: ci
+      PGDATABASE: autoplatform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - run: bash scripts/ci/migrations.sh apply
+
+  secrets:
+    name: secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/ci/secrets.sh
+
+  container:
+    name: container
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/ci/container.sh
+
+  ci:
+    name: gates obrigatórios
+    needs:
+      - fmt
+      - clippy
+      - test
+      - migrations
+      - secrets
+      - container
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Falhar se algum gate não passou
+        run: |
+          set -euo pipefail
+          results=(
+            "${{ needs.fmt.result }}"
+            "${{ needs.clippy.result }}"
+            "${{ needs.test.result }}"
+            "${{ needs.migrations.result }}"
+            "${{ needs.secrets.result }}"
+            "${{ needs.container.result }}"
+          )
+          for result in "${results[@]}"; do
+            if [[ "$result" != "success" ]]; then
+              printf 'gate com resultado %s\n' "$result" >&2
+              exit 1
+            fi
+          done

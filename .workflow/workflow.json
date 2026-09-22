@@ -11,7 +11,7 @@
   ],
   "tickets": [
     {
-      "id": "AP-GOV-001", "title": "Criar workspace Rust e fronteiras modulares", "status": "in_progress", "blockedBy": [],
+      "id": "AP-GOV-001", "title": "Criar workspace Rust e fronteiras modulares", "status": "merged", "blockedBy": [],
       "context": "O repositório existe apenas com governança; falta o executável mínimo da plataforma.",
       "objective": "Criar workspace Rust com API Axum, worker, configuração tipada, Docker e módulos vazios bem separados.",
       "scope": ["Criar crates de domínio, API, worker e infraestrutura.", "Adicionar health/readiness, configuração por ambiente e Docker local."],
@@ -24,7 +24,7 @@
       "risks": ["Criar monólito sem fronteiras.", "Carregar segredos em logs."]
     },
     {
-      "id": "AP-CI-001", "title": "Criar pipeline obrigatório da plataforma", "status": "ready", "blockedBy": ["AP-GOV-001"],
+      "id": "AP-CI-001", "title": "Criar pipeline obrigatório da plataforma", "status": "in_progress", "blockedBy": ["AP-GOV-001"],
       "context": "Backend financeiro e fiscal exige gates antes de qualquer feature.",
       "objective": "Automatizar fmt, clippy, testes, PostgreSQL, migrations, container e secret scanning.",
       "scope": ["Criar CI para PR e main.", "Usar PostgreSQL descartável e validar migrations do zero."],

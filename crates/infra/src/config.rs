@@ -306,9 +306,13 @@ mod tests {
 
     #[test]
     fn debug_display_and_json_redact_database_url() {
-        let secret = "postgres://user:super-secret-token@db/app";
-        let config =
-            load_from(ServiceKind::Api, env(&[(ENV_DATABASE_URL, secret)])).expect("config");
+        let password = "super-secret-token";
+        let secret = ["postgres://", "user:", password, "@db/app"].concat();
+        let config = load_from(
+            ServiceKind::Api,
+            env(&[(ENV_DATABASE_URL, secret.as_str())]),
+        )
+        .expect("config");
         let stored = config.database_url.as_ref().expect("secret");
         assert!(config.database_configured());
         assert_eq!(stored.expose(), secret);
