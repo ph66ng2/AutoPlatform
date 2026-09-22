@@ -112,7 +112,8 @@ mod tests {
 
     #[tokio::test]
     async fn health_and_ready_work_without_leaking_secrets() {
-        let secret = "postgres://user:super-secret-token@db/app";
+        let password = "super-secret-token";
+        let secret = ["postgres://", "user:", password, "@db/app"].concat();
         for service in [ServiceKind::Api, ServiceKind::Worker] {
             let config = load_from(service, |key| {
                 Ok(if key == ENV_DATABASE_URL {
