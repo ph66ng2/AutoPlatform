@@ -95,6 +95,40 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash scripts/ci/container.sh
 
+  environments:
+    name: environments
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: autoplatform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d autoplatform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      AUTO_PLATFORM_CI_DATABASE: "1"
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: ci
+      PGPASSWORD: ci
+      PGDATABASE: autoplatform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client jq
+      - run: bash scripts/ci/environments.sh
+      - run: bash scripts/ci/backup-restore.sh
+      - run: bash scripts/ci/promote.sh
+
   ci:
     name: gates obrigatórios
     needs:
@@ -104,6 +138,7 @@ jobs:
       - migrations
       - secrets
       - container
+      - environments
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -118,6 +153,7 @@ jobs:
             "${{ needs.migrations.result }}"
             "${{ needs.secrets.result }}"
             "${{ needs.container.result }}"
+            "${{ needs.environments.result }}"
           )
           for result in "${results[@]}"; do
             if [[ "$result" != "success" ]]; then

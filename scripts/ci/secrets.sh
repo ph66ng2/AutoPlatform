@@ -49,4 +49,4 @@ prove_scanner_fails() {
 }
 
 prove_scanner_fails
-scan "$root"
+scan "${1:-$root}"

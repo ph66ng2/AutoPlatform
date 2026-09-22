@@ -1,0 +1,30 @@
+{
+  "environments": ["local", "staging", "production"],
+  "forbidden_fragment": "bmitag",
+  "required_keys": [
+    "APP_ENV",
+    "HTTP_BIND",
+    "RUST_LOG",
+    "RUN_MIGRATIONS_ON_STARTUP",
+    "DATABASE_URL",
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_PROJECT_REF",
+    "BACKUP_TARGET",
+    "LOG_SINK",
+    "ALERT_CHANNEL"
+  ],
+  "secret_keys": [
+    "DATABASE_URL",
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY"
+  ],
+  "distinct_keys": [
+    "SUPABASE_PROJECT_REF",
+    "BACKUP_TARGET",
+    "LOG_SINK",
+    "ALERT_CHANNEL"
+  ]
+}
