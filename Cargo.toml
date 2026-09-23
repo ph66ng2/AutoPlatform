@@ -19,6 +19,7 @@ members = [
     "crates/receivables",
     "crates/sales",
     "crates/worker",
+    "spikes/gateway",
     "tests/security",
 ]
 
