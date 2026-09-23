@@ -5,6 +5,7 @@ members = [
     "crates/audit",
     "crates/banking",
     "crates/billing",
+    "crates/contracts",
     "crates/entitlements",
     "crates/fiscal",
     "crates/identity",

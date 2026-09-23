@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: AutoPlatform contratos canônicos
+  version: "1"
+  description: >
+    Catálogo dos contratos v1. Estes paths descrevem o envelope publicado;
+    os domínios ainda não estão implementados. A fonte verificável é
+    contracts/v1/manifest.sha256.
+servers:
+  - url: https://autoplatform.example/v1
+paths:
+  /fato-comercial:
+    post:
+      operationId: publishFatoComercial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../contracts/v1/fato-comercial.schema.json"
+      responses:
+        "202":
+          description: Aceito para processamento
+        "400":
+          description: Contrato inválido ou versão desconhecida
+  /estado-financeiro:
+    post:
+      operationId: publishEstadoFinanceiro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../contracts/v1/estado-financeiro.schema.json"
+      responses:
+        "202":
+          description: Aceito para processamento
+        "400":
+          description: Contrato inválido ou versão desconhecida
+  /estoque:
+    post:
+      operationId: publishEstoque
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../contracts/v1/estoque.schema.json"
+      responses:
+        "202":
+          description: Aceito para processamento
+        "400":
+          description: Contrato inválido ou versão desconhecida
+  /payment-intent:
+    post:
+      operationId: publishPaymentIntent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../contracts/v1/payment-intent.schema.json"
+      responses:
+        "202":
+          description: Aceito para processamento
+        "400":
+          description: Contrato inválido ou versão desconhecida
+  /fiscal-document:
+    post:
+      operationId: publishFiscalDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../contracts/v1/fiscal-document.schema.json"
+      responses:
+        "202":
+          description: Aceito para processamento
+        "400":
+          description: Contrato inválido ou versão desconhecida
+  /entitlement:
+    post:
+      operationId: publishEntitlement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../contracts/v1/entitlement.schema.json"
+      responses:
+        "202":
+          description: Aceito para processamento
+        "400":
+          description: Contrato inválido ou versão desconhecida

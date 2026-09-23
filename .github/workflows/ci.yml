@@ -150,6 +150,14 @@ jobs:
       - run: bash scripts/ci/backup-restore.sh
       - run: bash scripts/ci/promote.sh
 
+  contracts:
+    name: contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/ci/contracts.sh
+
   ci:
     name: gates obrigatórios
     needs:
@@ -160,6 +168,7 @@ jobs:
       - secrets
       - container
       - environments
+      - contracts
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -175,6 +184,7 @@ jobs:
             "${{ needs.secrets.result }}"
             "${{ needs.container.result }}"
             "${{ needs.environments.result }}"
+            "${{ needs.contracts.result }}"
           )
           for result in "${results[@]}"; do
             if [[ "$result" != "success" ]]; then

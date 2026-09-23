@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoplatform.dev/contracts/v1/estoque.schema.json",
+  "title": "Estoque",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "company_id",
+    "correlation_id",
+    "event_id",
+    "idempotency_key",
+    "movement_id",
+    "sku",
+    "quantity",
+    "reason",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "company_id": { "type": "string", "format": "uuid" },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 64,
+      "pattern": "opaque-id"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 64,
+      "pattern": "opaque-id"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 64,
+      "pattern": "opaque-id"
+    },
+    "movement_id": { "type": "string", "format": "uuid" },
+    "sku": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "sku"
+    },
+    "quantity": { "type": "integer" },
+    "reason": {
+      "type": "string",
+      "enum": ["reserve", "release", "consume", "receive"]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "company_id": "00000000-0000-4000-8000-0000000000a1",
+  "correlation_id": "corr-estoque-movimento",
+  "event_id": "event-estoque-movimen",
+  "idempotency_key": "idem-estoque-movimen",
+  "movement_id": "00000000-0000-4000-8000-0000000000e1",
+  "sku": "FILTRO-OLEO-001",
+  "quantity": -1,
+  "reason": "reserve",
+  "occurred_at": "2026-09-23T12:00:02Z"
+}
