@@ -37,7 +37,7 @@
       "risks": ["CI verde sem migrations.", "Secret em log de job."]
     },
     {
-      "id": "AP-ENV-001", "title": "Definir staging e produção isolados", "status": "in_progress", "blockedBy": ["AP-GOV-001"],
+      "id": "AP-ENV-001", "title": "Definir staging e produção isolados", "status": "merged", "blockedBy": ["AP-GOV-001"],
       "context": "Produção SaaS não reutiliza staging nem a operação interna BMITAG.",
       "objective": "Documentar e provisionar ambientes separados, chaves, backups, logs, alertas e promoção de migrations.",
       "scope": ["Definir runbooks e matriz de variáveis.", "Provisionar Supabase/serviço somente após confirmação humana registrada no ticket."],
@@ -50,7 +50,7 @@
       "risks": ["Reutilizar projeto interno.", "Aplicar migration no startup."]
     },
     {
-      "id": "AP-OBS-001", "title": "Implantar auditoria e observabilidade base", "status": "ready", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
+      "id": "AP-OBS-001", "title": "Implantar auditoria e observabilidade base", "status": "in_progress", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
       "context": "Workers, webhooks e operações financeiras precisam de correlação e alertas sem payload sensível.",
       "objective": "Padronizar logs, métricas, traces, audit events e alertas operacionais.",
       "scope": ["Propagar correlation_id, event_id e tenant pseudonimizado.", "Criar métricas de filas, retries, indeterminados e falhas de provider."],

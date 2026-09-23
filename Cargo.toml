@@ -12,6 +12,7 @@ members = [
     "crates/integration",
     "crates/inventory",
     "crates/kernel",
+    "crates/observability",
     "crates/payments",
     "crates/portal",
     "crates/receivables",
@@ -30,11 +31,13 @@ rust-version = "1.85"
 axum = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 thiserror = "1"
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "signal", "time"] }
 toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid = { version = "1", features = ["v4"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

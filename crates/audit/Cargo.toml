@@ -8,6 +8,12 @@ rust-version.workspace = true
 
 [dependencies]
 ap-kernel = { path = "../kernel" }
+ap-observability = { path = "../observability" }
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tracing.workspace = true
 
 [lints]
 workspace = true

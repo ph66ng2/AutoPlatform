@@ -1,5 +1,5 @@
 [package]
-name = "ap-infra"
+name = "ap-observability"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
@@ -8,17 +8,11 @@ rust-version.workspace = true
 
 [dependencies]
 ap-kernel = { path = "../kernel" }
-ap-observability = { path = "../observability" }
-axum.workspace = true
 serde.workspace = true
-serde_json.workspace = true
-thiserror.workspace = true
-tokio.workspace = true
+sha2.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-
-[dev-dependencies]
-toml.workspace = true
+uuid.workspace = true
 
 [lints]
 workspace = true

@@ -1,6 +1,12 @@
 use std::{collections::BTreeSet, fs, path::Path};
 
-const PROCESS_CRATES: &[&str] = &["ap-kernel", "ap-infra", "ap-api", "ap-worker"];
+const PROCESS_CRATES: &[&str] = &[
+    "ap-kernel",
+    "ap-infra",
+    "ap-api",
+    "ap-worker",
+    "ap-observability",
+];
 
 #[test]
 fn workspace_dependencies_stay_acyclic() {
@@ -73,7 +79,9 @@ fn workspace_dependencies_stay_acyclic() {
 fn allowed_internal<'a>(package: &str, domains: &'a [String]) -> Vec<&'a str> {
     match package {
         "ap-kernel" => Vec::new(),
-        "ap-infra" => vec!["ap-kernel"],
+        "ap-observability" => vec!["ap-kernel"],
+        "ap-infra" => vec!["ap-kernel", "ap-observability"],
+        "ap-audit" => vec!["ap-kernel", "ap-observability"],
         "ap-api" | "ap-worker" => {
             let mut allowed = vec!["ap-kernel", "ap-infra"];
             allowed.extend(domains.iter().map(String::as_str));

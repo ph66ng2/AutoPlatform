@@ -1,7 +1,10 @@
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{extract::State, middleware::from_fn, routing::get, Json, Router};
 use serde::Serialize;
 
-use crate::config::{AppConfig, Environment, ServiceKind};
+use crate::{
+    config::{AppConfig, Environment, ServiceKind},
+    telemetry::propagate_context,
+};
 
 #[derive(Clone, Copy)]
 pub(crate) struct AppState {
@@ -36,6 +39,7 @@ pub(crate) fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/ready", get(ready))
+        .layer(from_fn(propagate_context))
         .with_state(state)
 }
 
