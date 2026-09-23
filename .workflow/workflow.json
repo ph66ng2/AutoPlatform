@@ -24,7 +24,7 @@
       "risks": ["Criar monólito sem fronteiras.", "Carregar segredos em logs."]
     },
     {
-      "id": "AP-CI-001", "title": "Criar pipeline obrigatório da plataforma", "status": "in_progress", "blockedBy": ["AP-GOV-001"],
+      "id": "AP-CI-001", "title": "Criar pipeline obrigatório da plataforma", "status": "merged", "blockedBy": ["AP-GOV-001"],
       "context": "Backend financeiro e fiscal exige gates antes de qualquer feature.",
       "objective": "Automatizar fmt, clippy, testes, PostgreSQL, migrations, container e secret scanning.",
       "scope": ["Criar CI para PR e main.", "Usar PostgreSQL descartável e validar migrations do zero."],
@@ -37,7 +37,7 @@
       "risks": ["CI verde sem migrations.", "Secret em log de job."]
     },
     {
-      "id": "AP-ENV-001", "title": "Definir staging e produção isolados", "status": "ready", "blockedBy": ["AP-GOV-001"],
+      "id": "AP-ENV-001", "title": "Definir staging e produção isolados", "status": "in_progress", "blockedBy": ["AP-GOV-001"],
       "context": "Produção SaaS não reutiliza staging nem a operação interna BMITAG.",
       "objective": "Documentar e provisionar ambientes separados, chaves, backups, logs, alertas e promoção de migrations.",
       "scope": ["Definir runbooks e matriz de variáveis.", "Provisionar Supabase/serviço somente após confirmação humana registrada no ticket."],

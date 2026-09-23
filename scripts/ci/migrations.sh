@@ -98,11 +98,29 @@ psql_exec() {
   PGOPTIONS='-c client_min_messages=warning' psql -v ON_ERROR_STOP=1 --no-psqlrc -q "$@"
 }
 
+migration_apply_allowed() {
+  if [[ "${AUTO_PLATFORM_CI_DATABASE:-}" == "1" ]]; then
+    return 0
+  fi
+  local target=${AUTO_PLATFORM_PROMOTION_TARGET:-}
+  local confirmation=${AUTO_PLATFORM_PROMOTION_CONFIRMATION:-}
+  if [[ "$target" != "staging" && "$target" != "production" ]]; then
+    return 1
+  fi
+  if [[ "$confirmation" != "aprovo-migrations-${target}" ]]; then
+    return 1
+  fi
+  if [[ "${RUN_MIGRATIONS_ON_STARTUP:-false}" != "false" ]]; then
+    return 1
+  fi
+  return 0
+}
+
 apply_dir() {
   local dir=$1
   local base version checksum existing count expected
-  if [[ "${AUTO_PLATFORM_CI_DATABASE:-}" != "1" ]]; then
-    printf 'recuso aplicar migration fora de banco descartável\n' >&2
+  if ! migration_apply_allowed; then
+    printf 'recuso aplicar migration sem banco descartável ou promoção explícita do alvo\n' >&2
     return 1
   fi
   if [[ -z "${PGHOST:-}" || -z "${PGUSER:-}" || -z "${PGDATABASE:-}" ]]; then
@@ -151,9 +169,11 @@ SQL
   fi
 }
 
-prove_check_fails
-check_dir "$migrations"
-if [[ "${1:-apply}" == "check" ]]; then
-  exit 0
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  prove_check_fails
+  check_dir "$migrations"
+  if [[ "${1:-apply}" == "check" ]]; then
+    exit 0
+  fi
+  apply_dir "$migrations"
 fi
-apply_dir "$migrations"

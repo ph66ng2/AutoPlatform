@@ -1,0 +1,66 @@
+name: promote-migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Ambiente alvo
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      confirmation:
+        description: Frase aprovo-migrations-staging ou aprovo-migrations-production
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    name: staging
+    if: ${{ inputs.target == 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    env:
+      AUTO_PLATFORM_PROMOTION_TARGET: staging
+      AUTO_PLATFORM_PROMOTION_CONFIRMATION: ${{ inputs.confirmation }}
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+      PGHOST: ${{ secrets.PGHOST }}
+      PGPORT: ${{ secrets.PGPORT || '5432' }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+      PGDATABASE: ${{ secrets.PGDATABASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - run: bash scripts/ci/promote.sh
+
+  production:
+    name: production
+    if: ${{ inputs.target == 'production' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      AUTO_PLATFORM_PROMOTION_TARGET: production
+      AUTO_PLATFORM_PROMOTION_CONFIRMATION: ${{ inputs.confirmation }}
+      RUN_MIGRATIONS_ON_STARTUP: "false"
+      PGHOST: ${{ secrets.PGHOST }}
+      PGPORT: ${{ secrets.PGPORT || '5432' }}
+      PGUSER: ${{ secrets.PGUSER }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
+      PGDATABASE: ${{ secrets.PGDATABASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - run: bash scripts/ci/promote.sh

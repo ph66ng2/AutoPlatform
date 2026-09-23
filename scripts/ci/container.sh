@@ -49,3 +49,22 @@ worker_ready=$(curl --fail --silent "http://127.0.0.1:$((port + 1))/ready")
 [[ "$worker_body" == *'"service":"worker"'* ]]
 [[ "$api_ready" == *'"migrations_on_startup":false'* ]]
 [[ "$worker_ready" == *'"migrations_on_startup":false'* ]]
+
+prove_image_has_no_secrets() {
+  local leak extract
+  leak=$(mktemp -d)
+  printf '%s%s%s%s\n' 'postgres://' 'user:' 'synthetic' '@db/app' >"$leak/leak.txt"
+  if bash "$root/scripts/ci/secrets.sh" "$leak" >/dev/null 2>&1; then
+    printf 'scanner aceitou URL de banco com senha\n' >&2
+    rm -rf "$leak"
+    exit 1
+  fi
+  rm -rf "$leak"
+  extract=$(mktemp -d)
+  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' autoplatform:ci >"$extract/config-env.txt"
+  docker history --no-trunc --format '{{.CreatedBy}}' autoplatform:ci >"$extract/history.txt"
+  bash "$root/scripts/ci/secrets.sh" "$extract" >/dev/null
+  rm -rf "$extract"
+}
+
+prove_image_has_no_secrets
