@@ -88,11 +88,12 @@ fn clients_do_not_carry_service_role_or_provider_tokens() {
         root.join("openapi"),
         root.join("crates/portal"),
     ];
+    let private_key = ["BEGIN ", "PRIVATE KEY"].concat();
     let forbidden = [
         "service_role",
         "service-role",
         "SUPABASE_SERVICE_ROLE_KEY",
-        "BEGIN PRIVATE KEY",
+        private_key.as_str(),
         "ghp_",
         "xoxb-",
         "AKIA",
