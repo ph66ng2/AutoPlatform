@@ -8,6 +8,7 @@ const PROCESS_CRATES: &[&str] = &[
     "ap-observability",
     "ap-contracts",
     "ap-security-tests",
+    "ap-gateway-spike",
 ];
 
 #[test]
@@ -83,6 +84,7 @@ fn allowed_internal<'a>(package: &str, domains: &'a [String]) -> Vec<&'a str> {
         "ap-kernel" => Vec::new(),
         "ap-observability" => vec!["ap-kernel"],
         "ap-contracts" => vec!["ap-kernel"],
+        "ap-gateway-spike" => vec!["ap-kernel", "ap-contracts"],
         "ap-security-tests" => vec![
             "ap-kernel",
             "ap-identity",

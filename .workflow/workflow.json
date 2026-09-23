@@ -89,7 +89,7 @@
       "risks": ["Contrato grande demais.", "Breaking change silenciosa."]
     },
     {
-      "id": "AP-SEC-GATE-001", "title": "Homologar isolamento e segredos da fundação", "status": "in_progress", "blockedBy": ["AP-ID-001", "AP-CONTRACT-001", "AP-OBS-001"],
+      "id": "AP-SEC-GATE-001", "title": "Homologar isolamento e segredos da fundação", "status": "merged", "blockedBy": ["AP-ID-001", "AP-CONTRACT-001", "AP-OBS-001"],
       "context": "Nenhum domínio financeiro deve avançar com falha tenant ou segredo no cliente.",
       "objective": "Executar gate de RLS, constraints, bundles, logs, migrations e ameaças base.",
       "scope": ["Testar isolamento A/B e referências cruzadas.", "Revisar secrets, logs, imagem e migrações."],
@@ -102,7 +102,7 @@
       "risks": ["Gate burocrático sem teste real.", "Vazar segredo na evidência."]
     },
     {
-      "id": "AP-GW-ADR-001", "title": "Selecionar provider de billing e pagamentos", "status": "ready", "blockedBy": ["AP-CONTRACT-001"],
+      "id": "AP-GW-ADR-001", "title": "Selecionar provider de billing e pagamentos", "status": "in_progress", "blockedBy": ["AP-CONTRACT-001"],
       "context": "Billing da plataforma e pagamento da oficina são contextos independentes, mesmo usando o mesmo provider.",
       "objective": "Comparar Asaas e Mercado Pago com bloqueadores e pesos do Plano Diretor.",
       "scope": ["Provar sandbox, webhook, idempotência, Pix, cartão, refund, chargeback, reconciliação, recorrência e OAuth.", "Registrar ADR e providers escolhidos por contexto."],

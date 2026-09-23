@@ -1,0 +1,18 @@
+[package]
+name = "ap-gateway-spike"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ap-kernel = { path = "../../crates/kernel" }
+ap-contracts = { path = "../../crates/contracts" }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+hmac = "0.12"
+
+[lints]
+workspace = true

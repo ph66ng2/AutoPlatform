@@ -1,0 +1,31 @@
+{
+  "contexts": ["platform_billing", "workshop_payments"],
+  "providers": ["asaas", "mercado_pago"],
+  "pass_score": 80,
+  "blockers": [
+    "signed_webhook",
+    "idempotency",
+    "timeout_requires_query",
+    "redirect_does_not_confirm",
+    "no_desktop_secret",
+    "oauth_server_side",
+    "refund_chargeback_distinct",
+    "contexts_separated"
+  ],
+  "weights": {
+    "webhook": 15,
+    "idempotency": 15,
+    "timeout_query": 15,
+    "pix": 10,
+    "card": 10,
+    "refund": 10,
+    "chargeback": 10,
+    "recurrence": 5,
+    "oauth": 5,
+    "reconciliation": 5
+  },
+  "selected": {
+    "platform_billing": null,
+    "workshop_payments": null
+  }
+}
