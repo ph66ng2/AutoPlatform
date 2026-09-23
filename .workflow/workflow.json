@@ -76,7 +76,7 @@
       "risks": ["Confiar em user_metadata.", "Constraint sem company_id."]
     },
     {
-      "id": "AP-CONTRACT-001", "title": "Publicar contratos canônicos v1", "status": "in_progress", "blockedBy": ["AP-ID-001"],
+      "id": "AP-CONTRACT-001", "title": "Publicar contratos canônicos v1", "status": "merged", "blockedBy": ["AP-ID-001"],
       "context": "Os três repositórios precisam de schemas idênticos e evolução explícita.",
       "objective": "Versionar FatoComercial, EstadoFinanceiro, Estoque, PaymentIntent, FiscalDocument e Entitlement.",
       "scope": ["Criar JSON Schemas/OpenAPI, fixtures e hashes.", "Definir compatibilidade, idempotência, correlation_id e rejeição de versão desconhecida."],
@@ -89,7 +89,7 @@
       "risks": ["Contrato grande demais.", "Breaking change silenciosa."]
     },
     {
-      "id": "AP-SEC-GATE-001", "title": "Homologar isolamento e segredos da fundação", "status": "ready", "blockedBy": ["AP-ID-001", "AP-CONTRACT-001", "AP-OBS-001"],
+      "id": "AP-SEC-GATE-001", "title": "Homologar isolamento e segredos da fundação", "status": "in_progress", "blockedBy": ["AP-ID-001", "AP-CONTRACT-001", "AP-OBS-001"],
       "context": "Nenhum domínio financeiro deve avançar com falha tenant ou segredo no cliente.",
       "objective": "Executar gate de RLS, constraints, bundles, logs, migrations e ameaças base.",
       "scope": ["Testar isolamento A/B e referências cruzadas.", "Revisar secrets, logs, imagem e migrações."],

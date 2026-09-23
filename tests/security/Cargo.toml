@@ -1,0 +1,22 @@
+[package]
+name = "ap-security-tests"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ap-kernel = { path = "../../crates/kernel" }
+ap-identity = { path = "../../crates/identity" }
+ap-observability = { path = "../../crates/observability" }
+ap-contracts = { path = "../../crates/contracts" }
+serde_json.workspace = true
+
+[dev-dependencies]
+jsonwebtoken.workspace = true
+postgres.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

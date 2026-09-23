@@ -158,6 +158,37 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash scripts/ci/contracts.sh
 
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: autoplatform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d autoplatform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      AUTO_PLATFORM_CI_DATABASE: "1"
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: ci
+      PGPASSWORD: ci
+      PGDATABASE: autoplatform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/ci/security.sh
+
   ci:
     name: gates obrigatórios
     needs:
@@ -169,6 +200,7 @@ jobs:
       - container
       - environments
       - contracts
+      - security
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -185,6 +217,7 @@ jobs:
             "${{ needs.container.result }}"
             "${{ needs.environments.result }}"
             "${{ needs.contracts.result }}"
+            "${{ needs.security.result }}"
           )
           for result in "${results[@]}"; do
             if [[ "$result" != "success" ]]; then
