@@ -168,6 +168,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ap-security-tests"
+version = "0.1.0"
+dependencies = [
+ "ap-contracts",
+ "ap-identity",
+ "ap-kernel",
+ "ap-observability",
+ "jsonwebtoken",
+ "postgres",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "ap-worker"
 version = "0.1.0"
 dependencies = [

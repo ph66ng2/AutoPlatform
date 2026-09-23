@@ -176,9 +176,6 @@ fn reset_cluster(admin: &mut Client) {
     admin
         .batch_execute("DROP DATABASE IF EXISTS identity_rls")
         .expect("remove banco");
-    admin
-        .batch_execute("DROP ROLE IF EXISTS identity_app")
-        .expect("remove papel");
 }
 
 fn seed(db: &mut Client) {
