@@ -1,0 +1,339 @@
+{
+  "entitlement": {
+    "required": [
+      "schema_version",
+      "company_id",
+      "correlation_id",
+      "event_id",
+      "product",
+      "capability",
+      "status",
+      "occurred_at"
+    ],
+    "fields": {
+      "schema_version": {
+        "kind": "string",
+        "values": [
+          "1"
+        ]
+      },
+      "company_id": {
+        "kind": "string"
+      },
+      "correlation_id": {
+        "kind": "string"
+      },
+      "event_id": {
+        "kind": "string"
+      },
+      "product": {
+        "kind": "string",
+        "values": [
+          "autobo",
+          "autoos",
+          "bundle"
+        ]
+      },
+      "capability": {
+        "kind": "string"
+      },
+      "status": {
+        "kind": "string",
+        "values": [
+          "active",
+          "revoked",
+          "suspended"
+        ]
+      },
+      "occurred_at": {
+        "kind": "string"
+      }
+    }
+  },
+  "estado-financeiro": {
+    "required": [
+      "schema_version",
+      "company_id",
+      "correlation_id",
+      "event_id",
+      "idempotency_key",
+      "fact_id",
+      "state",
+      "amount_cents",
+      "occurred_at"
+    ],
+    "fields": {
+      "schema_version": {
+        "kind": "string",
+        "values": [
+          "1"
+        ]
+      },
+      "company_id": {
+        "kind": "string"
+      },
+      "correlation_id": {
+        "kind": "string"
+      },
+      "event_id": {
+        "kind": "string"
+      },
+      "idempotency_key": {
+        "kind": "string"
+      },
+      "fact_id": {
+        "kind": "string"
+      },
+      "state": {
+        "kind": "string",
+        "values": [
+          "failed",
+          "indeterminate",
+          "pending",
+          "received"
+        ]
+      },
+      "amount_cents": {
+        "kind": "integer"
+      },
+      "occurred_at": {
+        "kind": "string"
+      }
+    }
+  },
+  "estoque": {
+    "required": [
+      "schema_version",
+      "company_id",
+      "correlation_id",
+      "event_id",
+      "idempotency_key",
+      "movement_id",
+      "sku",
+      "quantity",
+      "reason",
+      "occurred_at"
+    ],
+    "fields": {
+      "schema_version": {
+        "kind": "string",
+        "values": [
+          "1"
+        ]
+      },
+      "company_id": {
+        "kind": "string"
+      },
+      "correlation_id": {
+        "kind": "string"
+      },
+      "event_id": {
+        "kind": "string"
+      },
+      "idempotency_key": {
+        "kind": "string"
+      },
+      "movement_id": {
+        "kind": "string"
+      },
+      "sku": {
+        "kind": "string"
+      },
+      "quantity": {
+        "kind": "integer"
+      },
+      "reason": {
+        "kind": "string",
+        "values": [
+          "consume",
+          "receive",
+          "release",
+          "reserve"
+        ]
+      },
+      "occurred_at": {
+        "kind": "string"
+      }
+    }
+  },
+  "fato-comercial": {
+    "required": [
+      "schema_version",
+      "company_id",
+      "correlation_id",
+      "event_id",
+      "idempotency_key",
+      "fact_id",
+      "origin",
+      "status",
+      "currency",
+      "amount_cents",
+      "occurred_at"
+    ],
+    "fields": {
+      "schema_version": {
+        "kind": "string",
+        "values": [
+          "1"
+        ]
+      },
+      "company_id": {
+        "kind": "string"
+      },
+      "correlation_id": {
+        "kind": "string"
+      },
+      "event_id": {
+        "kind": "string"
+      },
+      "idempotency_key": {
+        "kind": "string"
+      },
+      "fact_id": {
+        "kind": "string"
+      },
+      "origin": {
+        "kind": "string",
+        "values": [
+          "autobo",
+          "autoos",
+          "portal"
+        ]
+      },
+      "status": {
+        "kind": "string",
+        "values": [
+          "cancelled",
+          "confirmed"
+        ]
+      },
+      "currency": {
+        "kind": "string",
+        "values": [
+          "BRL"
+        ]
+      },
+      "amount_cents": {
+        "kind": "integer"
+      },
+      "occurred_at": {
+        "kind": "string"
+      }
+    }
+  },
+  "fiscal-document": {
+    "required": [
+      "schema_version",
+      "company_id",
+      "correlation_id",
+      "event_id",
+      "idempotency_key",
+      "document_id",
+      "kind",
+      "status",
+      "occurred_at"
+    ],
+    "fields": {
+      "schema_version": {
+        "kind": "string",
+        "values": [
+          "1"
+        ]
+      },
+      "company_id": {
+        "kind": "string"
+      },
+      "correlation_id": {
+        "kind": "string"
+      },
+      "event_id": {
+        "kind": "string"
+      },
+      "idempotency_key": {
+        "kind": "string"
+      },
+      "document_id": {
+        "kind": "string"
+      },
+      "kind": {
+        "kind": "string",
+        "values": [
+          "nfe",
+          "nfse"
+        ]
+      },
+      "status": {
+        "kind": "string",
+        "values": [
+          "cancelled",
+          "draft",
+          "indeterminate",
+          "issued"
+        ]
+      },
+      "occurred_at": {
+        "kind": "string"
+      }
+    }
+  },
+  "payment-intent": {
+    "required": [
+      "schema_version",
+      "company_id",
+      "correlation_id",
+      "event_id",
+      "idempotency_key",
+      "payment_intent_id",
+      "amount_cents",
+      "method",
+      "status",
+      "occurred_at"
+    ],
+    "fields": {
+      "schema_version": {
+        "kind": "string",
+        "values": [
+          "1"
+        ]
+      },
+      "company_id": {
+        "kind": "string"
+      },
+      "correlation_id": {
+        "kind": "string"
+      },
+      "event_id": {
+        "kind": "string"
+      },
+      "idempotency_key": {
+        "kind": "string"
+      },
+      "payment_intent_id": {
+        "kind": "string"
+      },
+      "amount_cents": {
+        "kind": "integer"
+      },
+      "method": {
+        "kind": "string",
+        "values": [
+          "card",
+          "pix"
+        ]
+      },
+      "status": {
+        "kind": "string",
+        "values": [
+          "created",
+          "failed",
+          "indeterminate",
+          "pending",
+          "succeeded"
+        ]
+      },
+      "occurred_at": {
+        "kind": "string"
+      }
+    }
+  }
+}

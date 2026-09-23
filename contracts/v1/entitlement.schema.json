@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoplatform.dev/contracts/v1/entitlement.schema.json",
+  "title": "Entitlement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "company_id",
+    "correlation_id",
+    "event_id",
+    "product",
+    "capability",
+    "status",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "company_id": { "type": "string", "format": "uuid" },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 64,
+      "pattern": "opaque-id"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 64,
+      "pattern": "opaque-id"
+    },
+    "product": { "type": "string", "enum": ["autoos", "autobo", "bundle"] },
+    "capability": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "capability"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "suspended", "revoked"]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" }
+  }
+}

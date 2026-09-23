@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "company_id": "00000000-0000-4000-8000-0000000000a1",
+  "correlation_id": "corr-fato-comercial",
+  "event_id": "event-fato-comercial",
+  "idempotency_key": "idem-fato-comercial",
+  "fact_id": "00000000-0000-4000-8000-0000000000f1",
+  "origin": "autoos",
+  "status": "confirmed",
+  "currency": "BRL",
+  "amount_cents": 15000,
+  "occurred_at": "2026-09-23T12:00:00Z"
+}

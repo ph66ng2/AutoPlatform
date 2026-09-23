@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "company_id": "00000000-0000-4000-8000-0000000000a1",
+  "correlation_id": "corr-fiscal-document1",
+  "event_id": "event-fiscal-document",
+  "idempotency_key": "idem-fiscal-document1",
+  "document_id": "00000000-0000-4000-8000-0000000000d1",
+  "kind": "nfe",
+  "status": "draft",
+  "occurred_at": "2026-09-23T12:00:04Z",
+  "payload": "<NFe>documento</NFe>"
+}

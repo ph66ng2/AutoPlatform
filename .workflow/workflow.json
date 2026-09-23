@@ -63,7 +63,7 @@
       "risks": ["PII em logs.", "Alertas sem ação definida."]
     },
     {
-      "id": "AP-ID-001", "title": "Implementar identidade empresarial e memberships", "status": "in_progress", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
+      "id": "AP-ID-001", "title": "Implementar identidade empresarial e memberships", "status": "merged", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
       "context": "AutoOS e AutoBO compartilham conta e company_id, mas permissões são específicas por produto.",
       "objective": "Criar companies, memberships, roles, sessão autorizada, RLS, suspensão e auditoria.",
       "scope": ["Adicionar migrations e policies tenant-safe.", "Integrar Supabase Auth e autorização server-side por produto."],
@@ -76,7 +76,7 @@
       "risks": ["Confiar em user_metadata.", "Constraint sem company_id."]
     },
     {
-      "id": "AP-CONTRACT-001", "title": "Publicar contratos canônicos v1", "status": "ready", "blockedBy": ["AP-ID-001"],
+      "id": "AP-CONTRACT-001", "title": "Publicar contratos canônicos v1", "status": "in_progress", "blockedBy": ["AP-ID-001"],
       "context": "Os três repositórios precisam de schemas idênticos e evolução explícita.",
       "objective": "Versionar FatoComercial, EstadoFinanceiro, Estoque, PaymentIntent, FiscalDocument e Entitlement.",
       "scope": ["Criar JSON Schemas/OpenAPI, fixtures e hashes.", "Definir compatibilidade, idempotência, correlation_id e rejeição de versão desconhecida."],
