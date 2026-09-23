@@ -50,7 +50,7 @@
       "risks": ["Reutilizar projeto interno.", "Aplicar migration no startup."]
     },
     {
-      "id": "AP-OBS-001", "title": "Implantar auditoria e observabilidade base", "status": "in_progress", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
+      "id": "AP-OBS-001", "title": "Implantar auditoria e observabilidade base", "status": "merged", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
       "context": "Workers, webhooks e operações financeiras precisam de correlação e alertas sem payload sensível.",
       "objective": "Padronizar logs, métricas, traces, audit events e alertas operacionais.",
       "scope": ["Propagar correlation_id, event_id e tenant pseudonimizado.", "Criar métricas de filas, retries, indeterminados e falhas de provider."],
@@ -63,7 +63,7 @@
       "risks": ["PII em logs.", "Alertas sem ação definida."]
     },
     {
-      "id": "AP-ID-001", "title": "Implementar identidade empresarial e memberships", "status": "ready", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
+      "id": "AP-ID-001", "title": "Implementar identidade empresarial e memberships", "status": "in_progress", "blockedBy": ["AP-CI-001", "AP-ENV-001"],
       "context": "AutoOS e AutoBO compartilham conta e company_id, mas permissões são específicas por produto.",
       "objective": "Criar companies, memberships, roles, sessão autorizada, RLS, suspensão e auditoria.",
       "scope": ["Adicionar migrations e policies tenant-safe.", "Integrar Supabase Auth e autorização server-side por produto."],
