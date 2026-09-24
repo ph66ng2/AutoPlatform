@@ -133,6 +133,10 @@ name = "ap-inventory"
 version = "0.1.0"
 dependencies = [
  "ap-kernel",
+ "postgres",
+ "serde",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]
