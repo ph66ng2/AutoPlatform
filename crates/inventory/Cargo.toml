@@ -8,6 +8,14 @@ rust-version.workspace = true
 
 [dependencies]
 ap-kernel = { path = "../kernel" }
+postgres.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+[[test]]
+name = "core"
+path = "../../tests/inventory/core.rs"
 
 [lints]
 workspace = true
