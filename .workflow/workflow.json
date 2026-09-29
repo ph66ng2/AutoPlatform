@@ -1,5 +1,44 @@
 {
-  "project": "AutoPlatform — backend compartilhado AutoOS e AutoBO",
+  "project": "AutoPlatform — backend Fiscal e depois Financeiro do AutoOS",
+  "roadmap": {
+    "milestone": "AutoOS Fiscal PROD BMITAG",
+    "role": "Contrato v2, ingestão e backend fiscal",
+    "focusIds": [
+      "AP-FISC-ACCOUNTING-EXT-001",
+      "AP-CONTRACT-002",
+      "AP-INTEGRATION-001",
+      "AP-FISC-CORE-001",
+      "AP-FISC-CONFIG-001",
+      "AP-FISC-NFSE-001",
+      "AP-FISC-NFE-001",
+      "AP-FISC-GATE-001",
+      "AP-FISC-PROD-001"
+    ],
+    "deferredIds": [
+      "AP-SALE-001",
+      "AP-INV-CUTOVER-001",
+      "AP-BILL-001",
+      "AP-BILL-002",
+      "AP-BILL-003",
+      "AP-BILL-GATE-001",
+      "AP-PAY-CORE-001",
+      "AP-PAY-GW-001",
+      "AP-PAY-GATE-001",
+      "AP-SIC-001",
+      "AP-SIC-GATE-001",
+      "AP-PORTAL-001",
+      "AP-PORTAL-PAY-001",
+      "AP-CLIENTS-PORTAL-EXT-001",
+      "AP-PORTAL-GATE-001",
+      "AP-OFFLINE-001",
+      "AP-REL-GATE-001"
+    ],
+    "supersededIds": [
+      "AP-INTEGRATION-GATE-001",
+      "AP-PRODUCT-SYNC-EXT-001"
+    ],
+    "note": "AP-INV-001 continua in_progress até aceitação humana do PR #9; não bloqueia o núcleo fiscal. Prioridade não altera status."
+  },
   "baseBranch": "origin/main",
   "architectureDecisions": [
     "Monólito modular Rust com processos API e worker na mesma base de código.",
@@ -206,17 +245,63 @@
       "risks": ["Começar provider sem matriz.", "Extrapolar BMITAG para todo Brasil."]
     },
     {
-      "id": "AP-FISC-CORE-001", "title": "Criar núcleo fiscal provider-neutral", "status": "ready", "blockedBy": ["AP-SALE-001", "AP-CONTRACT-001"],
-      "context": "Documentos emitidos não se confundem com NF-e importada e timeout indeterminado exige consulta.",
-      "objective": "Criar perfis, documentos, itens, eventos, artefatos e máquina de estados fiscal.",
-      "scope": ["Criar migrations e APIs prepare/issue/cancel.", "Criar portas separadas NFS-e/NF-e e permissão FISCAL."],
-      "outOfScope": ["Adapter de provider.", "Emissão automática."],
-      "expectedBehavior": "Venda mista prepara dois documentos correlacionados e exige confirmação humana.",
-      "acceptanceCriteria": ["XML é artefato principal.", "Transição inválida/regressiva é rejeitada."],
-      "tests": ["State machine, idempotência e concorrência.", "Produto/serviço/mista e tenant A/B."],
-      "testInstructions": {"prerequisites":["Vendas sintéticas e provider fake."],"steps":["Preparar documentos dos três cenários.","Testar issued/rejected/indeterminate/cancel."],"expectedResultAndEvidence":["Histórico auditável e sem duplicidade."],"dataImpact":"Documentos sintéticos sem validade fiscal.","cleanupAndRollback":["Descartar banco de teste."],"stagingRestrictions":"Nenhuma emissão real."},
-      "likelyFiles": ["migrations/", "crates/fiscal/", "tests/fiscal/"],
-      "risks": ["Reusar tabela importada.", "Retry duplicar documento."]
+      "id": "AP-FISC-CORE-001",
+      "title": "Criar núcleo fiscal provider-neutral",
+      "status": "ready",
+      "blockedBy": [
+        "AP-CONTRACT-002"
+      ],
+      "context": "Documentos emitidos nascem de FatoComercial v2 originado por OS. Não exigem AP-SALE-001 nem estoque central; NF-e importada permanece separada da emissão. Timeout indeterminado exige consulta.",
+      "objective": "Criar núcleo fiscal provider-neutral que consome snapshot faturável imutável por empresa e origem.",
+      "scope": [
+        "Criar migrations e APIs prepare/issue/cancel a partir de FatoComercial v2.",
+        "Criar perfis, documentos, itens, eventos, artefatos, portas NFS-e/NF-e e permissão FISCAL."
+      ],
+      "outOfScope": [
+        "Adapter de provider.",
+        "Emissão automática."
+      ],
+      "expectedBehavior": "Fato com itens de serviço e produto prepara dois documentos correlacionados e exige confirmação humana antes de issue/cancel.",
+      "acceptanceCriteria": [
+        "Não depende de Sale ou estoque central para preparar documentos de OS.",
+        "XML é artefato principal e transições inválidas/regressivas são rejeitadas.",
+        "Idempotência inclui company_id e origem/versão do fato."
+      ],
+      "tests": [
+        "State machine, idempotência concorrente e tenant A/B com FatoComercial v2.",
+        "Fixtures de serviço, produto e misto, além de timeout seguido de consulta."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Usar a branch e worktree do ticket, criada a partir da branch principal indicada no workflow.",
+          "Usar fixtures sintéticas e serviços falsos; não inserir dados ou credenciais BMITAG em testes automatizados."
+        ],
+        "steps": [
+          "Usar FatoComercial v2 sintético para serviço, produto e misto.",
+          "Executar cargo fmt --check, cargo clippy --workspace --all-targets -- -D warnings e cargo test --workspace; usar PostgreSQL descartável para migrations.",
+          "Simular timeout e confirmar consulta antes de retry."
+        ],
+        "expectedResultAndEvidence": [
+          "Não depende de Sale ou estoque central para preparar documentos de OS.",
+          "XML é artefato principal e transições inválidas/regressivas são rejeitadas."
+        ],
+        "dataImpact": "Somente fixtures e banco descartável; não emitir documento real.",
+        "cleanupAndRollback": [
+          "Remover fixtures e recursos temporários criados no ambiente descartável.",
+          "Em caso de falha, reverter o PR e preservar trilha de auditoria; não desfazer documentos fiscais reais por script."
+        ],
+        "stagingRestrictions": "Staging usa dados fictícios e credenciais de homologação; operações fiscais reais exigem autorização humana separada."
+      },
+      "likelyFiles": [
+        "migrations/",
+        "crates/fiscal/",
+        "tests/fiscal/"
+      ],
+      "risks": [
+        "Reusar tabela de documentos importados.",
+        "Retry duplicar documento.",
+        "Acoplar núcleo a venda standalone ou estoque central."
+      ]
     },
     {
       "id": "AP-FISC-CONFIG-001", "title": "Implementar configuração fiscal server-side", "status": "ready", "blockedBy": ["AP-FISC-CORE-001", "AP-FISC-ACCOUNTING-EXT-001"],
@@ -258,17 +343,60 @@
       "risks": ["Provider não cobrir UF/regime.", "Misturar NF-e e NFS-e."]
     },
     {
-      "id": "AP-FISC-GATE-001", "title": "Homologar marco Fiscal Operacional", "status": "ready", "blockedBy": ["AP-FISC-NFSE-001", "AP-FISC-NFE-001", "AP-OBS-001"],
-      "context": "Fiscal não depende da integração AutoOS↔AutoBO.",
-      "objective": "Provar NF-e, NFS-e, venda mista, artefatos, falhas, consulta e cancelamento.",
-      "scope": ["Executar gate completo em homologacao.", "Produzir Go/No-Go com contabilidade."],
-      "outOfScope": ["Emitir primeiro documento real sem autorização separada.", "Automatizar emissão."],
-      "expectedBehavior": "Fiscal fica pronto para revisão humana pelo AutoBO.",
-      "acceptanceCriteria": ["Todos os cenários obrigatórios passam.", "Nenhum segredo ou payload fiscal integral aparece em logs."],
-      "tests": ["Suite fiscal do Plano Diretor.", "Falha de provider e reconciliação."],
-      "testInstructions": {"prerequisites":["Adapters homologados e contabilidade disponível."],"steps":["Executar matriz completa.","Produzir relatório e decisão humana."],"expectedResultAndEvidence":["Go/No-Go rastreável e sanitizado."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures quando possível."],"stagingRestrictions":"Sem emissão real."},
-      "likelyFiles": ["tests/e2e/fiscal/", "docs/reports/"],
-      "risks": ["Gate sem cenário misto.", "Homologar sem contabilidade."]
+      "id": "AP-FISC-GATE-001",
+      "title": "Homologar backend fiscal para a jornada AutoOS",
+      "status": "ready",
+      "blockedBy": [
+        "AP-FISC-NFSE-001",
+        "AP-FISC-NFE-001",
+        "AP-OBS-001"
+      ],
+      "context": "Este gate comprova o backend fiscal em homologação; a jornada integrada do AutoOS será comprovada em AO-FISC-GATE-001.",
+      "objective": "Provar NFS-e, NF-e, operação mista, artefatos, rejeição, consulta, timeout e cancelamento em ambiente apropriado.",
+      "scope": [
+        "Executar gate completo em homologacao.",
+        "Produzir Go/No-Go com contabilidade."
+      ],
+      "outOfScope": [
+        "Emitir primeiro documento real sem autorização separada.",
+        "Automatizar emissão."
+      ],
+      "expectedBehavior": "Fiscal backend fica pronto para a revisão humana no AutoOS, sem depender de UI nova no AutoBO.",
+      "acceptanceCriteria": [
+        "Cenários obrigatórios de serviço, produto e misto passam em homologação.",
+        "Nenhum segredo ou payload fiscal integral aparece em logs.",
+        "Go/No-Go documenta lacunas e validação contábil."
+      ],
+      "tests": [
+        "Suite fiscal do Plano Diretor.",
+        "Falha de provider e reconciliação."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Adapters homologados e contabilidade disponível."
+        ],
+        "steps": [
+          "Executar matriz completa.",
+          "Produzir relatório e decisão humana."
+        ],
+        "expectedResultAndEvidence": [
+          "Go/No-Go rastreável e sanitizado."
+        ],
+        "dataImpact": "Somente homologacao.",
+        "cleanupAndRollback": [
+          "Cancelar fixtures quando possível."
+        ],
+        "stagingRestrictions": "Sem emissão real."
+      },
+      "likelyFiles": [
+        "tests/e2e/fiscal/",
+        "docs/reports/"
+      ],
+      "risks": [
+        "Gate sem cenário misto.",
+        "Homologar sem matriz contábil.",
+        "Confundir homologação backend com produção real BMITAG."
+      ]
     },
     {
       "id": "AP-PAY-CORE-001", "title": "Implementar núcleo de PaymentIntent", "status": "ready", "blockedBy": ["AP-SALE-001", "AP-GW-ADR-001", "AP-CONTRACT-001"],
@@ -336,17 +464,66 @@
       "risks": ["Confundir sandbox com homologação real.", "Baixa sem confirmação."]
     },
     {
-      "id": "AP-INTEGRATION-001", "title": "Implementar integração AutoOS↔AutoBO", "status": "ready", "blockedBy": ["AP-SALE-001", "AP-CONTRACT-001", "AP-OBS-001"],
-      "context": "FatoComercial entra, cria projeção financeira e EstadoFinanceiro retorna sem acesso entre tabelas.",
-      "objective": "Criar outbox, inbox, POST commercial-events, read models e reconciliação versionada.",
-      "scope": ["Implementar ingestão idempotente e materialização de venda/recebível.", "Publicar estados monotônicos e consulta por correlação."],
-      "outOfScope": ["Exigir provider real.", "Bloquear AutoOS quando AutoBO estiver fora."],
-      "expectedBehavior": "Uma versão de OS gera uma intenção; retry não duplica e estados não regridem.",
-      "acceptanceCriteria": ["Tenant A não acessa B.", "Falha parcial é reconciliável e auditável."],
-      "tests": ["Idempotência concorrente e crash entre etapas.", "Resposta perdida, versão posterior e estados fora de ordem."],
-      "testInstructions": {"prerequisites":["Contratos e venda em staging."],"steps":["Publicar fatos sintéticos.","Repetir, perder resposta e desordenar estados."],"expectedResultAndEvidence":["Uma intenção e estado final correto por versão."],"dataImpact":"Eventos/vendas sintéticos.","cleanupAndRollback":["Remover fixtures conforme runbook."],"stagingRestrictions":"Sem cobrança/fiscal real."},
-      "likelyFiles": ["migrations/", "crates/integration/", "crates/workers/"],
-      "risks": ["Perder evento fora da transação.", "Acoplar payload a enum interno."]
+      "id": "AP-INTEGRATION-001",
+      "title": "Ingerir FatoComercial v2 do AutoOS",
+      "status": "ready",
+      "blockedBy": [
+        "AP-CONTRACT-002",
+        "AP-ID-001",
+        "AP-OBS-001"
+      ],
+      "context": "A operação autoritativa está no AutoOS; AutoPlatform recebe snapshot faturável imutável para Fiscal sem depender do AutoBO, de Sale standalone ou de estoque central.",
+      "objective": "Expor API versionada de ingestão de FatoComercial v2 com autenticação de empresa, validação, idempotência e correlação.",
+      "scope": [
+        "Implementar POST /commercial-facts versionado e persistência do snapshot por company_id.",
+        "Rejeitar repetição conflitante, devolver ID estável e disponibilizar leitura ao núcleo fiscal.",
+        "Registrar observabilidade e reconciliação de falhas parciais sem payload fiscal integral em logs."
+      ],
+      "outOfScope": [
+        "Criar Sale ou recebível neste ticket.",
+        "Implementar integração AutoOS↔AutoBO ou pagamento."
+      ],
+      "expectedBehavior": "A mesma empresa, OS e versão produzem o mesmo fato; payload diferente com a mesma chave gera conflito explícito.",
+      "acceptanceCriteria": [
+        "Tenant A não lê nem grava fato de B.",
+        "Retry e resposta perdida não duplicam snapshot.",
+        "O núcleo fiscal encontra o snapshot exato por ID/correlação."
+      ],
+      "tests": [
+        "Contract tests para v2, payload inválido, conflito e tenant A/B.",
+        "Concorrência, resposta perdida e reconsulta por correlação."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Usar a branch e worktree do ticket, criada a partir da branch principal indicada no workflow.",
+          "Usar fixtures sintéticas e serviços falsos; não inserir dados ou credenciais BMITAG em testes automatizados."
+        ],
+        "steps": [
+          "Usar fixtures v2 de duas empresas em banco PostgreSQL descartável.",
+          "Executar cargo fmt --check, cargo clippy --workspace --all-targets -- -D warnings e cargo test --workspace.",
+          "Repetir requisição idêntica, enviar payload conflitante e simular resposta perdida."
+        ],
+        "expectedResultAndEvidence": [
+          "Tenant A não lê nem grava fato de B.",
+          "Retry e resposta perdida não duplicam snapshot."
+        ],
+        "dataImpact": "Criação temporária de dados fictícios no banco descartável; sem dados reais.",
+        "cleanupAndRollback": [
+          "Remover fixtures e recursos temporários criados no ambiente descartável.",
+          "Em caso de falha, reverter o PR e preservar trilha de auditoria; não desfazer documentos fiscais reais por script."
+        ],
+        "stagingRestrictions": "Staging usa dados fictícios e credenciais de homologação; operações fiscais reais exigem autorização humana separada."
+      },
+      "likelyFiles": [
+        "migrations/",
+        "crates/integration/",
+        "crates/workers/"
+      ],
+      "risks": [
+        "Idempotência sem company_id.",
+        "Expor snapshot ou credenciais em logs.",
+        "Fazer venda standalone virar pré-requisito do fato."
+      ]
     },
     {
       "id": "AP-INTEGRATION-GATE-001", "title": "Homologar Produto em Sincronia no AutoPlatform", "status": "ready", "blockedBy": ["AP-INTEGRATION-001", "AP-INV-001"],
@@ -477,6 +654,140 @@
       "testInstructions": {"prerequisites":["Todos os bloqueadores e autorização humana por etapa."],"steps":["Executar gate BMITAG.","Executar beta controlado e produzir decisão GA."],"expectedResultAndEvidence":["Relatórios por etapa e riscos residuais aceitos."],"dataImpact":"Operação real somente nas janelas explicitamente autorizadas." ,"cleanupAndRollback":["Executar rollback/runbook da etapa diante de No-Go."],"stagingRestrictions":"Nenhum rollout automático."},
       "likelyFiles": ["docs/runbooks/", "docs/reports/", "tests/e2e/"],
       "risks": ["Pular beta.", "Aceitar divergência sem explicação."]
+    },
+    {
+      "id": "AP-CONTRACT-002",
+      "title": "Publicar FatoComercial faturável v2",
+      "status": "ready",
+      "blockedBy": [
+        "AP-CONTRACT-001"
+      ],
+      "objective": "Publicar schema v2 imutável, exemplos e política de versão/correção para fato comercial faturável.",
+      "context": "O contrato v1 não contém cliente e itens suficientes para NF-e/NFS-e originadas por OS; alterar v1 silenciosamente quebraria consumidores.",
+      "expectedBehavior": "Publicar schema v2 imutável, exemplos e política de versão/correção para fato comercial faturável.",
+      "scope": [
+        "Definir empresa, estabelecimento, origem OS+versão, cliente snapshot, itens produto/serviço, quantidades, descontos, totais e dados fiscais necessários.",
+        "Preservar v1 e documentar compatibilidade, idempotência e correção por nova versão/evento.",
+        "Validar exemplos de OS de serviço, produto e mista com AutoOS e contabilidade."
+      ],
+      "outOfScope": [
+        "Implementar adapter fiscal ou decidir tributação por inferência de código."
+      ],
+      "acceptanceCriteria": [
+        "v1 permanece aceito sem mudança de significado.",
+        "Exemplos v2 validam por schema e fecham totais.",
+        "Documento especifica imutabilidade após ingestão e identificadores por empresa/OS/versão."
+      ],
+      "tests": [
+        "Validação JSON Schema de exemplos válidos e inválidos.",
+        "Contract tests de compatibilidade v1 e do v2 com AutoOS."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Usar a branch e worktree do ticket, criada a partir da branch principal indicada no workflow.",
+          "Usar fixtures sintéticas e serviços falsos; não inserir dados ou credenciais BMITAG em testes automatizados."
+        ],
+        "steps": [
+          "Criar exemplos sintéticos de serviço, mercadoria e misto.",
+          "Validar v1 inalterado e casos válidos/inválidos do v2; executar cargo fmt --check e cargo test --workspace."
+        ],
+        "expectedResultAndEvidence": [
+          "v1 permanece aceito sem mudança de significado.",
+          "Exemplos v2 validam por schema e fecham totais."
+        ],
+        "dataImpact": "Somente dados sintéticos e temporários em ambiente de teste.",
+        "cleanupAndRollback": [
+          "Remover fixtures e recursos temporários criados no ambiente descartável.",
+          "Em caso de falha, reverter o PR e preservar trilha de auditoria; não desfazer documentos fiscais reais por script."
+        ],
+        "stagingRestrictions": "Staging usa dados fictícios e credenciais de homologação; operações fiscais reais exigem autorização humana separada."
+      },
+      "likelyFiles": [
+        "contracts/v2/fato-comercial.schema.json",
+        "contracts/v2/examples/",
+        "crates/contracts/",
+        "docs/"
+      ],
+      "risks": [
+        "Esquema insuficiente para operação mista.",
+        "Mudar v1 sem versionamento ou aceitar total inconsistente."
+      ],
+      "externalPrerequisites": [
+        {
+          "repo": "AutoOs",
+          "id": "AO-SUITE-001",
+          "state": "proposed",
+          "condition": "Aprovação final do contrato requer ownership do Core; elaboração pode avançar em paralelo."
+        }
+      ]
+    },
+    {
+      "id": "AP-FISC-PROD-001",
+      "title": "Homologar Fiscal em produção controlada BMITAG",
+      "status": "blocked",
+      "blockedBy": [
+        "AP-FISC-GATE-001",
+        "AP-FISC-ACCOUNTING-EXT-001"
+      ],
+      "objective": "Conduzir piloto autorizado com pelo menos uma NFS-e e uma NF-e reais, consulta, artefatos, vínculo à OS e tratamento de falha.",
+      "context": "Homologação backend e jornada AutoOS ainda não demonstram emissão real e rastreável na operação BMITAG.",
+      "expectedBehavior": "Conduzir piloto autorizado com pelo menos uma NFS-e e uma NF-e reais, consulta, artefatos, vínculo à OS e tratamento de falha.",
+      "scope": [
+        "Obter autorização humana e revisão contábil para os cenários escolhidos.",
+        "Registrar evidências mínimas redigidas de emissão, consulta, XML, documento auxiliar, rejeição tratável e idempotência.",
+        "Verificar cancelamento em ambiente apropriado antes de declará-lo coberto."
+      ],
+      "outOfScope": [
+        "Automatizar emissão em produção.",
+        "Realizar o piloto apenas por este PR de planejamento."
+      ],
+      "acceptanceCriteria": [
+        "Pelo menos uma NFS-e e uma NF-e reais no conjunto do piloto quando aplicáveis aos cenários aprovados.",
+        "Cada documento se vincula a OS e fato v2 imutável; retry não duplica emissão.",
+        "Go/No-Go assinado por operação, Fiscal e contabilidade com falhas abertas explícitas."
+      ],
+      "tests": [
+        "Roteiro manual controlado com evidência redigida.",
+        "Consulta após timeout e confirmação de idempotência sem repetir issue cegamente."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Usar a branch e worktree do ticket, criada a partir da branch principal indicada no workflow.",
+          "Usar fixtures sintéticas e serviços falsos; não inserir dados ou credenciais BMITAG em testes automatizados."
+        ],
+        "steps": [
+          "Antes de qualquer ação real, obter autorização explícita e confirmar ambiente, certificado e matriz contábil.",
+          "Executar o piloto manualmente; guardar apenas IDs e evidência redigida; registrar consulta, XML/documento e Go/No-Go."
+        ],
+        "expectedResultAndEvidence": [
+          "Pelo menos uma NFS-e e uma NF-e reais no conjunto do piloto quando aplicáveis aos cenários aprovados.",
+          "Cada documento se vincula a OS e fato v2 imutável; retry não duplica emissão."
+        ],
+        "dataImpact": "Pode emitir documentos reais e persistentes somente em execução futura com autorização humana específica; este ticket de planejamento não realiza a operação.",
+        "cleanupAndRollback": [
+          "Remover fixtures e recursos temporários criados no ambiente descartável.",
+          "Em caso de falha, reverter o PR e preservar trilha de auditoria; não desfazer documentos fiscais reais por script."
+        ],
+        "stagingRestrictions": "Staging usa dados fictícios e credenciais de homologação; operações fiscais reais exigem autorização humana separada."
+      },
+      "likelyFiles": [
+        ".workflow/FISCAL_PROD_ROADMAP.md",
+        "docs/",
+        ".workflow/workflow.json"
+      ],
+      "risks": [
+        "Emissão real sem aprovação.",
+        "Logs com dados fiscais completos ou credenciais.",
+        "Retry duplicar nota."
+      ],
+      "externalPrerequisites": [
+        {
+          "repo": "AutoOs",
+          "id": "AO-FISC-GATE-001",
+          "state": "proposed",
+          "condition": "Permanece blocked até o gate integrado AutoOS ser aceito por pessoa."
+        }
+      ]
     }
   ]
 }
