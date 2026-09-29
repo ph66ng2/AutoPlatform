@@ -4,6 +4,8 @@
 
 Este documento orienta a **prioridade**. Os três `.workflow/workflow.json` continuam sendo a fonte de status e `blockedBy` local. O objeto `roadmap` em cada catálogo registra foco, adiamentos e substituições sem converter ticket adiado em `blocked` ou `merged`. Os planejadores atuais ignoram `roadmap` e `externalPrerequisites`; uma onda tecnicamente liberada não é autorização de prioridade nem prova de dependência cruzada satisfeita.
 
+**Revisão coordenada:** [AutoOs #102](https://github.com/ph66ng2/AutoOs/pull/102) · [AutoPlatform #10](https://github.com/ph66ng2/AutoPlatform/pull/10) · [AutoBO #9](https://github.com/ph66ng2/AutoBO/pull/9). Os três PRs estão em rascunho e nenhum deles implementa o fluxo fiscal.
+
 ## Primeiro movimento: quatro frentes em paralelo
 
 | Frente | Ticket | Entrega de aceite |
