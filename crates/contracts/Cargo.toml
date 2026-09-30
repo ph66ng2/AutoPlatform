@@ -16,5 +16,9 @@ sha2.workspace = true
 name = "catalog"
 path = "../../tests/contracts/catalog.rs"
 
+[[test]]
+name = "fato_comercial_v2"
+path = "../../tests/contracts/fato_comercial_v2.rs"
+
 [lints]
 workspace = true

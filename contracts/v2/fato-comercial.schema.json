@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autoplatform.dev/contracts/v2/fato-comercial.schema.json",
+  "title": "FatoComercial faturável v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "company_id",
+    "establishment_id",
+    "correlation_id",
+    "event_id",
+    "idempotency_key",
+    "fact_id",
+    "origin",
+    "os_id",
+    "os_version",
+    "status",
+    "currency",
+    "customer",
+    "items",
+    "totals",
+    "occurred_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "2"
+    },
+    "company_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "establishment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 64
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128
+    },
+    "fact_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "origin": {
+      "const": "autoos"
+    },
+    "os_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "os_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "enum": [
+        "confirmed",
+        "cancelled"
+      ]
+    },
+    "currency": {
+      "const": "BRL"
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "tax_id",
+        "address"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tax_id": {
+          "type": "string",
+          "minLength": 11,
+          "maxLength": 14
+        },
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "street",
+            "number",
+            "district",
+            "city_ibge_code",
+            "state",
+            "postal_code"
+          ],
+          "properties": {
+            "street": {
+              "type": "string",
+              "minLength": 1
+            },
+            "number": {
+              "type": "string",
+              "minLength": 1
+            },
+            "district": {
+              "type": "string",
+              "minLength": 1
+            },
+            "city_ibge_code": {
+              "type": "string",
+              "minLength": 7
+            },
+            "state": {
+              "type": "string",
+              "minLength": 2
+            },
+            "postal_code": {
+              "type": "string",
+              "minLength": 8
+            }
+          }
+        },
+        "state_registration": {
+          "type": "string"
+        },
+        "municipal_registration": {
+          "type": "string"
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_id",
+          "kind",
+          "description",
+          "quantity_milli",
+          "unit_price_cents",
+          "gross_cents",
+          "discount_cents",
+          "total_cents",
+          "fiscal"
+        ],
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "product",
+              "service"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quantity_milli": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "unit_price_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gross_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "discount_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fiscal": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [],
+            "properties": {
+              "product": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "ncm",
+                  "cfop",
+                  "tax_situation",
+                  "origin_code"
+                ],
+                "properties": {
+                  "ncm": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "cfop": {
+                    "type": "string",
+                    "minLength": 4
+                  },
+                  "tax_situation": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "origin_code": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "service": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "municipal_service_code",
+                  "cnae",
+                  "tax_municipality_ibge_code"
+                ],
+                "properties": {
+                  "municipal_service_code": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "cnae": {
+                    "type": "string",
+                    "minLength": 7
+                  },
+                  "tax_municipality_ibge_code": {
+                    "type": "string",
+                    "minLength": 7
+                  }
+                }
+              }
+            }
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "kind": {
+                "const": "product"
+              },
+              "fiscal": {
+                "type": "object",
+                "required": [
+                  "product"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "product": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "ncm",
+                      "cfop",
+                      "tax_situation",
+                      "origin_code"
+                    ],
+                    "properties": {
+                      "ncm": {
+                        "type": "string",
+                        "minLength": 8
+                      },
+                      "cfop": {
+                        "type": "string",
+                        "minLength": 4
+                      },
+                      "tax_situation": {
+                        "type": "string",
+                        "minLength": 2
+                      },
+                      "origin_code": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "kind": {
+                "const": "service"
+              },
+              "fiscal": {
+                "type": "object",
+                "required": [
+                  "service"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "service": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "municipal_service_code",
+                      "cnae",
+                      "tax_municipality_ibge_code"
+                    ],
+                    "properties": {
+                      "municipal_service_code": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "cnae": {
+                        "type": "string",
+                        "minLength": 7
+                      },
+                      "tax_municipality_ibge_code": {
+                        "type": "string",
+                        "minLength": 7
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gross_cents",
+        "discount_cents",
+        "total_cents"
+      ],
+      "properties": {
+        "gross_cents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "discount_cents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_cents": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

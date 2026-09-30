@@ -7,3 +7,5 @@ Compatível em v1: campo opcional novo. Quebra: remover campo, mudar tipo, acres
 `schema_version` diferente de `1` é rejeitada sem efeito parcial. Todo contrato leva `company_id` e `correlation_id`. Contratos de mutação levam `idempotency_key`.
 
 Campos não mapeiam tabela interna. XML, documento da pessoa, token e segredo não entram no schema.
+
+O snapshot faturável de OS usa [FatoComercial v2](v2/README.md), publicado em diretório separado. O v1 continua válido e não é enriquecido implicitamente.

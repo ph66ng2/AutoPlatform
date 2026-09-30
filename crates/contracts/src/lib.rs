@@ -6,13 +6,14 @@ mod surface;
 mod validate;
 
 pub use catalog::{
-    contract_dir, load_schema, schema_path, CatalogError, CONTRACTS, SCHEMA_VERSION,
+    contract_dir, load_fato_comercial_v2, load_schema, schema_path, CatalogError, CONTRACTS,
+    SCHEMA_VERSION,
 };
 pub use hash::{verify_manifest, HashError};
 pub use surface::{
     assert_compatible, extract_surface, load_published_surface, published_from_disk, SurfaceError,
 };
-pub use validate::{validate_instance, ValidationError};
+pub use validate::{validate_fato_comercial_v2, validate_instance, ValidationError};
 
 ap_kernel::declare_module!("contracts");
 
