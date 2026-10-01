@@ -51,10 +51,10 @@ fn v2_schema_matches_published_hash() {
 }
 
 #[test]
-fn service_product_and_mixed_examples_close() {
+fn service_product_mixed_and_bundled_examples_close() {
     let schema = load_fato_comercial_v2().expect("v2 schema");
     let fixtures = examples("valid");
-    assert_eq!(fixtures.len(), 3);
+    assert_eq!(fixtures.len(), 4);
     for fact in fixtures {
         validate_fato_comercial_v2(&schema, &fact).expect("valid fact");
     }
@@ -64,7 +64,7 @@ fn service_product_and_mixed_examples_close() {
 fn malformed_and_inconsistent_examples_fail() {
     let schema = load_fato_comercial_v2().expect("v2 schema");
     let fixtures = examples("invalid");
-    assert_eq!(fixtures.len(), 4);
+    assert_eq!(fixtures.len(), 5);
     for fact in fixtures {
         assert!(validate_fato_comercial_v2(&schema, &fact).is_err());
     }
@@ -77,7 +77,21 @@ fn duplicate_items_and_overflow_fail() {
     let duplicate = fact["items"][0].clone();
     fact["items"].as_array_mut().expect("items").push(duplicate);
     assert!(validate_fato_comercial_v2(&schema, &fact).is_err());
-    let mut fact = examples("valid").remove(0);
+    let mut fact = examples("valid")
+        .into_iter()
+        .find(|fact| fact["pricing_mode"] == "itemized")
+        .expect("itemized example");
     fact["items"][0]["quantity_milli"] = json!(i64::MAX);
+    assert!(validate_fato_comercial_v2(&schema, &fact).is_err());
+}
+
+#[test]
+fn bundled_total_must_close_without_item_prices() {
+    let schema = load_fato_comercial_v2().expect("v2 schema");
+    let mut fact = examples("valid")
+        .into_iter()
+        .find(|fact| fact["pricing_mode"] == "bundle")
+        .expect("bundle example");
+    fact["totals"]["total_cents"] = json!(319999);
     assert!(validate_fato_comercial_v2(&schema, &fact).is_err());
 }

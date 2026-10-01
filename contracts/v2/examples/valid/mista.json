@@ -65,5 +65,6 @@
     "gross_cents": 35000,
     "discount_cents": 1000,
     "total_cents": 34000
-  }
+  },
+  "pricing_mode": "itemized"
 }

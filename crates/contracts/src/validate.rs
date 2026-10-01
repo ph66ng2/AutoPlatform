@@ -44,6 +44,13 @@ pub fn validate_instance(schema: &Value, instance: &Value) -> Result<(), Validat
     let Some(object) = instance.as_object() else {
         return Err(ValidationError::Type);
     };
+    if schema
+        .get("maxProperties")
+        .and_then(Value::as_u64)
+        .is_some_and(|max| object.len() > max as usize)
+    {
+        return Err(ValidationError::Range);
+    }
     if schema.get("additionalProperties") == Some(&Value::Bool(false)) {
         let properties = schema
             .get("properties")
@@ -78,6 +85,20 @@ pub fn validate_instance(schema: &Value, instance: &Value) -> Result<(), Validat
             }
         }
     }
+    validate_one_of(schema, instance)?;
+    Ok(())
+}
+
+fn validate_one_of(schema: &Value, value: &Value) -> Result<(), ValidationError> {
+    if let Some(variants) = schema.get("oneOf").and_then(Value::as_array) {
+        let matches = variants
+            .iter()
+            .filter(|variant| validate_value(variant, value).is_ok())
+            .count();
+        if matches != 1 {
+            return Err(ValidationError::OneOf);
+        }
+    }
     Ok(())
 }
 
@@ -85,6 +106,7 @@ pub fn validate_instance(schema: &Value, instance: &Value) -> Result<(), Validat
 pub fn validate_fato_comercial_v2(schema: &Value, instance: &Value) -> Result<(), ValidationError> {
     validate_instance(schema, instance)?;
     let items = instance["items"].as_array().ok_or(ValidationError::Type)?;
+    let bundle = instance["pricing_mode"] == "bundle";
     let mut gross = 0_i64;
     let mut discount = 0_i64;
     let mut total = 0_i64;
@@ -93,6 +115,9 @@ pub fn validate_fato_comercial_v2(schema: &Value, instance: &Value) -> Result<()
         let id = item["item_id"].as_str().ok_or(ValidationError::Type)?;
         if !ids.insert(id) {
             return Err(ValidationError::Totals);
+        }
+        if bundle {
+            continue;
         }
         let quantity = item["quantity_milli"]
             .as_i64()
@@ -125,6 +150,22 @@ pub fn validate_fato_comercial_v2(schema: &Value, instance: &Value) -> Result<()
         total = total
             .checked_add(actual_total)
             .ok_or(ValidationError::Range)?;
+    }
+    if bundle {
+        let totals = &instance["totals"];
+        let gross = totals["gross_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let discount = totals["discount_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let total = totals["total_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        if discount > gross || total != gross - discount {
+            return Err(ValidationError::Totals);
+        }
+        return Ok(());
     }
     if instance["totals"]["gross_cents"].as_i64() != Some(gross)
         || instance["totals"]["discount_cents"].as_i64() != Some(discount)
@@ -212,15 +253,7 @@ fn validate_value(schema: &Value, value: &Value) -> Result<(), ValidationError> 
         None => {}
         _ => return Err(ValidationError::Type),
     }
-    if let Some(variants) = schema.get("oneOf").and_then(Value::as_array) {
-        let matches = variants
-            .iter()
-            .filter(|variant| validate_value(variant, value).is_ok())
-            .count();
-        if matches != 1 {
-            return Err(ValidationError::OneOf);
-        }
-    }
+    validate_one_of(schema, value)?;
     if schema.get("type").is_none()
         && (schema.get("required").is_some() || schema.get("properties").is_some())
     {
