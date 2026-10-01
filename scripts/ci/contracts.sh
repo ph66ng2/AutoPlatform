@@ -52,6 +52,7 @@ prove_rejections() {
 
 prove_rejections
 check_manifest "$dir"
+(cd "$root/contracts/v2" && sha256sum --check --strict manifest.sha256 >/dev/null)
 diff -q "$dir/manifest.sha256" "$root/examples/autoos-consumer/expected.sha256" >/dev/null
 diff -q "$dir/manifest.sha256" "$root/examples/autobo-consumer/expected.sha256" >/dev/null
 bash "$root/examples/autoos-consumer/verify.sh"

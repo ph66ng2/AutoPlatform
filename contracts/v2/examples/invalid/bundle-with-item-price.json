@@ -1,0 +1,63 @@
+{
+  "schema_version": "2",
+  "company_id": "00000000-0000-4000-8000-0000000000a1",
+  "establishment_id": "00000000-0000-4000-8000-0000000000b1",
+  "correlation_id": "corr-os-synthetic-0001",
+  "event_id": "00000000-0000-4000-8000-000000000031",
+  "idempotency_key": "idem-os-synthetic-bundle-0001",
+  "fact_id": "00000000-0000-4000-8000-000000000032",
+  "origin": "autoos",
+  "os_id": "00000000-0000-4000-8000-000000000033",
+  "os_version": 1,
+  "status": "confirmed",
+  "currency": "BRL",
+  "customer": {
+    "name": "Cliente Exemplo",
+    "tax_id": "00000000000",
+    "address": {
+      "street": "Rua Exemplo",
+      "number": "10",
+      "district": "Centro",
+      "city_ibge_code": "0000000",
+      "state": "BA",
+      "postal_code": "00000000"
+    }
+  },
+  "occurred_at": "2026-09-30T12:00:00Z",
+  "items": [
+    {
+      "item_id": "produto-1",
+      "kind": "product",
+      "description": "Peça sintética",
+      "quantity_milli": 2000,
+      "fiscal": {
+        "product": {
+          "ncm": "00000000",
+          "cfop": "0000",
+          "tax_situation": "00",
+          "origin_code": "0"
+        }
+      },
+      "total_cents": 10000
+    },
+    {
+      "item_id": "servico-1",
+      "kind": "service",
+      "description": "Serviço sintético",
+      "quantity_milli": 1000,
+      "fiscal": {
+        "service": {
+          "municipal_service_code": "00.00",
+          "cnae": "0000000",
+          "tax_municipality_ibge_code": "0000000"
+        }
+      }
+    }
+  ],
+  "totals": {
+    "gross_cents": 320000,
+    "discount_cents": 0,
+    "total_cents": 320000
+  },
+  "pricing_mode": "bundle"
+}

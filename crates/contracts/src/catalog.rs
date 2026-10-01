@@ -45,6 +45,13 @@ pub fn load_schema(name: &str) -> Result<Value, CatalogError> {
     read_json(&schema_path(name))
 }
 
+pub fn load_fato_comercial_v2() -> Result<Value, CatalogError> {
+    read_json(
+        &PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../contracts/v2/fato-comercial.schema.json"),
+    )
+}
+
 pub fn assert_envelope(schema: &Value) -> Result<(), CatalogError> {
     let required = schema
         .get("required")

@@ -658,7 +658,7 @@
     {
       "id": "AP-CONTRACT-002",
       "title": "Publicar FatoComercial faturável v2",
-      "status": "ready",
+      "status": "in_progress",
       "blockedBy": [
         "AP-CONTRACT-001"
       ],

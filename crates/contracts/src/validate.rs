@@ -11,6 +11,8 @@ pub enum ValidationError {
     Pattern(&'static str),
     Range,
     UnknownVersion,
+    OneOf,
+    Totals,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -25,17 +27,30 @@ impl std::fmt::Display for ValidationError {
             Self::Pattern(name) => write!(formatter, "padrão inválido: {name}"),
             Self::Range => formatter.write_str("intervalo inválido"),
             Self::UnknownVersion => formatter.write_str("schema_version desconhecida"),
+            Self::OneOf => formatter.write_str("variante de item inválida"),
+            Self::Totals => formatter.write_str("totais inconsistentes"),
         }
     }
 }
 
 pub fn validate_instance(schema: &Value, instance: &Value) -> Result<(), ValidationError> {
-    if schema.get("type").and_then(Value::as_str) != Some("object") {
+    if schema
+        .get("type")
+        .and_then(Value::as_str)
+        .is_some_and(|kind| kind != "object")
+    {
         return Err(ValidationError::Type);
     }
     let Some(object) = instance.as_object() else {
         return Err(ValidationError::Type);
     };
+    if schema
+        .get("maxProperties")
+        .and_then(Value::as_u64)
+        .is_some_and(|max| object.len() > max as usize)
+    {
+        return Err(ValidationError::Range);
+    }
     if schema.get("additionalProperties") == Some(&Value::Bool(false)) {
         let properties = schema
             .get("properties")
@@ -63,13 +78,100 @@ pub fn validate_instance(schema: &Value, instance: &Value) -> Result<(), Validat
             return Err(ValidationError::UnknownVersion);
         }
     }
-    let Some(properties) = schema.get("properties").and_then(Value::as_object) else {
-        return Ok(());
-    };
-    for (name, spec) in properties {
-        if let Some(value) = object.get(name) {
-            validate_value(spec, value)?;
+    if let Some(properties) = schema.get("properties").and_then(Value::as_object) {
+        for (name, spec) in properties {
+            if let Some(value) = object.get(name) {
+                validate_value(spec, value)?;
+            }
         }
+    }
+    validate_one_of(schema, instance)?;
+    Ok(())
+}
+
+fn validate_one_of(schema: &Value, value: &Value) -> Result<(), ValidationError> {
+    if let Some(variants) = schema.get("oneOf").and_then(Value::as_array) {
+        let matches = variants
+            .iter()
+            .filter(|variant| validate_value(variant, value).is_ok())
+            .count();
+        if matches != 1 {
+            return Err(ValidationError::OneOf);
+        }
+    }
+    Ok(())
+}
+
+/// Validate the v2 wire shape and the arithmetic that JSON Schema cannot express.
+pub fn validate_fato_comercial_v2(schema: &Value, instance: &Value) -> Result<(), ValidationError> {
+    validate_instance(schema, instance)?;
+    let items = instance["items"].as_array().ok_or(ValidationError::Type)?;
+    let bundle = instance["pricing_mode"] == "bundle";
+    let mut gross = 0_i64;
+    let mut discount = 0_i64;
+    let mut total = 0_i64;
+    let mut ids = std::collections::HashSet::new();
+    for item in items {
+        let id = item["item_id"].as_str().ok_or(ValidationError::Type)?;
+        if !ids.insert(id) {
+            return Err(ValidationError::Totals);
+        }
+        if bundle {
+            continue;
+        }
+        let quantity = item["quantity_milli"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let unit = item["unit_price_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let actual_gross = item["gross_cents"].as_i64().ok_or(ValidationError::Type)?;
+        let actual_discount = item["discount_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let actual_total = item["total_cents"].as_i64().ok_or(ValidationError::Type)?;
+        let expected_gross = quantity
+            .checked_mul(unit)
+            .and_then(|v| v.checked_add(500))
+            .map(|v| v / 1000)
+            .ok_or(ValidationError::Range)?;
+        if actual_gross != expected_gross
+            || actual_discount > actual_gross
+            || actual_total != actual_gross - actual_discount
+        {
+            return Err(ValidationError::Totals);
+        }
+        gross = gross
+            .checked_add(actual_gross)
+            .ok_or(ValidationError::Range)?;
+        discount = discount
+            .checked_add(actual_discount)
+            .ok_or(ValidationError::Range)?;
+        total = total
+            .checked_add(actual_total)
+            .ok_or(ValidationError::Range)?;
+    }
+    if bundle {
+        let totals = &instance["totals"];
+        let gross = totals["gross_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let discount = totals["discount_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        let total = totals["total_cents"]
+            .as_i64()
+            .ok_or(ValidationError::Type)?;
+        if discount > gross || total != gross - discount {
+            return Err(ValidationError::Totals);
+        }
+        return Ok(());
+    }
+    if instance["totals"]["gross_cents"].as_i64() != Some(gross)
+        || instance["totals"]["discount_cents"].as_i64() != Some(discount)
+        || instance["totals"]["total_cents"].as_i64() != Some(total)
+    {
+        return Err(ValidationError::Totals);
     }
     Ok(())
 }
@@ -132,9 +234,30 @@ fn validate_value(schema: &Value, value: &Value) -> Result<(), ValidationError> 
                 }
             }
         }
-        Some("object") => return validate_instance(schema, value),
+        Some("object") => validate_instance(schema, value)?,
+        Some("array") => {
+            let values = value.as_array().ok_or(ValidationError::Type)?;
+            if schema
+                .get("minItems")
+                .and_then(Value::as_u64)
+                .is_some_and(|min| values.len() < min as usize)
+            {
+                return Err(ValidationError::Range);
+            }
+            if let Some(item_schema) = schema.get("items") {
+                for item in values {
+                    validate_value(item_schema, item)?;
+                }
+            }
+        }
         None => {}
         _ => return Err(ValidationError::Type),
+    }
+    validate_one_of(schema, value)?;
+    if schema.get("type").is_none()
+        && (schema.get("required").is_some() || schema.get("properties").is_some())
+    {
+        validate_instance(schema, value)?;
     }
     Ok(())
 }
