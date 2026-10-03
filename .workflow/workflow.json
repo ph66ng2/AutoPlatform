@@ -333,11 +333,11 @@
     },
     {
       "id": "AP-FISC-NFE-001", "title": "Implementar e homologar adapter NF-e", "status": "ready", "blockedBy": ["AP-FISC-CONFIG-001"],
-      "context": "Mercadorias exigem NF-e modelo 55 independente da NFS-e.",
+      "context": "O fornecimento de mercadorias e de peças/partes empregadas sujeito ao ICMS requer documento fiscal próprio quando aplicável, mesmo com preço único na OS. A matriz contábil aprovada identifica o enquadramento e os valores necessários; o núcleo não infere dispensa ou exigência de NF-e apenas pelo tipo do item ou pela forma de cobrança.",
       "objective": "Selecionar e implementar provider para autorização, consulta, cancelamento, inutilização e contingência aplicável.",
       "scope": ["Avaliar provider pela matriz fiscal.", "Implementar adapter e contract tests com XML como artefato principal."],
       "outOfScope": ["NFS-e.", "Documento real sem autorização."],
-      "expectedBehavior": "NF-e de mercadoria converge com chave, XML, DANFE e eventos auditáveis.",
+      "expectedBehavior": "Quando o cenário fundamentado exigir NF-e, a emissão converge com chave, XML, DANFE e eventos auditáveis; se a OS de preço único não trouxer os valores fiscais necessários, a preparação fica pendente de revisão, sem rateio automático.",
       "acceptanceCriteria": ["Timeout consulta antes de retry.", "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único não dispensa NF-e exigida para peças/partes fornecidas."],
       "tests": ["Autorização/rejeição/consulta/cancelamento.", "Indeterminado, tenant A/B e venda mista."],
       "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de mercadoria e misto.","Forçar timeout e reconciliação."],"expectedResultAndEvidence":["Sem duplicidade e artefatos completos."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
