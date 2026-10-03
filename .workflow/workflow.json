@@ -235,7 +235,7 @@
       "id": "AP-FISC-ACCOUNTING-EXT-001", "title": "Receber matriz fiscal validada pela contabilidade", "status": "blocked", "blockedBy": [],
       "context": "Município, regime, CNAEs, CFOPs, NCMs, CST/CSOSN e retenções precisam de validação BMITAG.",
       "objective": "Registrar decisões contábeis que condicionam configuração e providers fiscais.",
-      "scope": ["Receber matriz assinada/revisada.", "Mapear cenários de serviço, mercadoria e venda mista."],
+      "scope": ["Receber matriz assinada/revisada.", "Mapear cenários de serviço, mercadoria cobrada separadamente e OS com peça incluída em preço único, indicando o documento aprovado em cada caso."],
       "outOfScope": ["Inventar regra tributária.", "Emitir documento."],
       "expectedBehavior": "Ticket permanece blocked até confirmação humana da contabilidade.",
       "acceptanceCriteria": ["Matriz cobre cenários piloto e certificados.", "Lacunas e limitações estão explícitas."],
@@ -255,21 +255,23 @@
       "objective": "Criar núcleo fiscal provider-neutral que consome snapshot faturável imutável por empresa e origem.",
       "scope": [
         "Criar migrations e APIs prepare/issue/cancel a partir de FatoComercial v2.",
-        "Criar perfis, documentos, itens, eventos, artefatos, portas NFS-e/NF-e e permissão FISCAL."
+        "Criar perfis, documentos, itens, eventos, artefatos, portas NFS-e/NF-e e permissão FISCAL.",
+        "Definir entrada de decisão fiscal versionada por empresa/estabelecimento e cenário; AP-FISC-CONFIG-001 implementa seu cadastro e validação."
       ],
       "outOfScope": [
         "Adapter de provider.",
         "Emissão automática."
       ],
-      "expectedBehavior": "Fato com itens de serviço e produto prepara dois documentos correlacionados e exige confirmação humana antes de issue/cancel.",
+      "expectedBehavior": "Prepare usa decisão fiscal aprovada e vigente para empresa/estabelecimento e cenário. OS com peça incluída em preço único pode preparar uma NFS-e quando essa decisão assim determinar; mercadoria cobrada separadamente pode exigir NF-e correlacionada. Sem decisão aplicável, não prepara documento para emissão e sinaliza revisão. Issue/cancel exigem confirmação humana.",
       "acceptanceCriteria": [
         "Não depende de Sale ou estoque central para preparar documentos de OS.",
         "XML é artefato principal e transições inválidas/regressivas são rejeitadas.",
-        "Idempotência inclui company_id e origem/versão do fato."
+        "Idempotência inclui company_id e origem/versão do fato.",
+        "Pricing_mode e kind dos itens não determinam sozinhos o tipo ou a quantidade de documentos; bundle não gera rateio fiscal fictício."
       ],
       "tests": [
         "State machine, idempotência concorrente e tenant A/B com FatoComercial v2.",
-        "Fixtures de serviço, produto e misto, além de timeout seguido de consulta."
+        "Fixtures de serviço, produto, misto com cobrança separada e preço único com peça incluída; decisão ausente bloqueia prepare; timeout seguido de consulta."
       ],
       "testInstructions": {
         "prerequisites": [
@@ -277,7 +279,7 @@
           "Usar fixtures sintéticas e serviços falsos; não inserir dados ou credenciais BMITAG em testes automatizados."
         ],
         "steps": [
-          "Usar FatoComercial v2 sintético para serviço, produto e misto.",
+          "Usar FatoComercial v2 sintético para serviço, produto, misto itemizado e misto de preço único; fornecer decisões fiscais sintéticas aprovadas por cenário e testar ausência de decisão.",
           "Executar cargo fmt --check, cargo clippy --workspace --all-targets -- -D warnings e cargo test --workspace; usar PostgreSQL descartável para migrations.",
           "Simular timeout e confirmar consulta antes de retry."
         ],
@@ -307,11 +309,11 @@
       "id": "AP-FISC-CONFIG-001", "title": "Implementar configuração fiscal server-side", "status": "ready", "blockedBy": ["AP-FISC-CORE-001", "AP-FISC-ACCOUNTING-EXT-001"],
       "context": "Certificados e credenciais fiscais não podem chegar ao desktop.",
       "objective": "Criar configuração por empresa com validação, encryption e rotação segura.",
-      "scope": ["Implementar FiscalIssuerProfile e provider config criptografada.", "Validar matriz contábil antes de READY_FOR_REVIEW."],
+      "scope": ["Implementar FiscalIssuerProfile e provider config criptografada.", "Persistir decisões fiscais versionadas por empresa/estabelecimento e cenário, com aprovação e vigência, conforme a entrada definida em AP-FISC-CORE-001.", "Validar matriz contábil antes de READY_FOR_REVIEW."],
       "outOfScope": ["Escolher regra tributária automaticamente.", "Exibir segredo de volta."],
       "expectedBehavior": "Serviço usa segredo descriptografado apenas em memória e registra auditoria sanitizada.",
-      "acceptanceCriteria": ["Master key fica fora do banco.", "Tenant A não referencia config de B."],
-      "tests": ["Encryption/rotação e negação tenant.", "Config incompleta bloqueia preparação."],
+      "acceptanceCriteria": ["Master key fica fora do banco.", "Tenant A não referencia config de B.", "Decisão ausente, não aprovada ou fora da vigência bloqueia preparação; alterações não reclassificam documentos históricos."],
+      "tests": ["Encryption/rotação e negação tenant.", "Config incompleta bloqueia preparação.", "Decisões diferentes por empresa e cenário, inclusive NFS-e única para preço fechado e documentos correlacionados para cobrança separada."],
       "testInstructions": {"prerequisites":["Chaves exclusivas de staging."],"steps":["Cadastrar/rotacionar config sintética.","Tentar leitura e uso cruzado."],"expectedResultAndEvidence":["Segredo nunca retorna ou aparece em log."],"dataImpact":"Somente configs de teste.","cleanupAndRollback":["Revogar e remover secrets de staging."],"stagingRestrictions":"Sem certificado real."},
       "likelyFiles": ["crates/fiscal/", "crates/secrets/", "migrations/"],
       "risks": ["Master key no banco.", "Segredo em log/erro."]
@@ -336,7 +338,7 @@
       "scope": ["Avaliar provider pela matriz fiscal.", "Implementar adapter e contract tests com XML como artefato principal."],
       "outOfScope": ["NFS-e.", "Documento real sem autorização."],
       "expectedBehavior": "NF-e de mercadoria converge com chave, XML, DANFE e eventos auditáveis.",
-      "acceptanceCriteria": ["Timeout consulta antes de retry.", "Cenário misto correlaciona NF-e e NFS-e sem acoplá-los."],
+      "acceptanceCriteria": ["Timeout consulta antes de retry.", "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único aprovado para NFS-e não cria NF-e por inferência dos itens."],
       "tests": ["Autorização/rejeição/consulta/cancelamento.", "Indeterminado, tenant A/B e venda mista."],
       "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de mercadoria e misto.","Forçar timeout e reconciliação."],"expectedResultAndEvidence":["Sem duplicidade e artefatos completos."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
       "likelyFiles": ["crates/fiscal/providers/", "tests/providers/nfe/"],
@@ -363,7 +365,7 @@
       ],
       "expectedBehavior": "Fiscal backend fica pronto para a revisão humana no AutoOS, sem depender de UI nova no AutoBO.",
       "acceptanceCriteria": [
-        "Cenários obrigatórios de serviço, produto e misto passam em homologação.",
+        "Cenários obrigatórios de serviço, produto, misto com cobrança separada e preço único com peça incluída passam em homologação conforme decisões fiscais aprovadas.",
         "Nenhum segredo ou payload fiscal integral aparece em logs.",
         "Go/No-Go documenta lacunas e validação contábil."
       ],
