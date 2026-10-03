@@ -235,10 +235,10 @@
       "id": "AP-FISC-ACCOUNTING-EXT-001", "title": "Receber matriz fiscal validada pela contabilidade", "status": "blocked", "blockedBy": [],
       "context": "Município, regime, CNAEs, CFOPs, NCMs, CST/CSOSN e retenções precisam de validação BMITAG.",
       "objective": "Registrar decisões contábeis que condicionam configuração e providers fiscais.",
-      "scope": ["Receber matriz assinada/revisada.", "Mapear cenários de serviço, mercadoria cobrada separadamente e OS com peça incluída em preço único, indicando o documento aprovado em cada caso."],
+      "scope": ["Receber matriz assinada/revisada.", "Mapear cenários de serviço, mercadoria cobrada separadamente e OS com peça incluída em preço único, distinguindo peças/partes fornecidas de materiais consumidos e indicando enquadramento, base de cálculo e documentos exigidos em cada caso."],
       "outOfScope": ["Inventar regra tributária.", "Emitir documento."],
       "expectedBehavior": "Ticket permanece blocked até confirmação humana da contabilidade.",
-      "acceptanceCriteria": ["Matriz cobre cenários piloto e certificados.", "Lacunas e limitações estão explícitas."],
+      "acceptanceCriteria": ["Matriz cobre cenários piloto e certificados.", "Para manutenção com peças, a contabilidade enfrenta expressamente a ressalva do subitem 14.01 da LC 116/2003, inclusive no preço único; se houver ISS e ICMS, define critério documental e de valoração sem inventar rateio.", "Lacunas e limitações estão explícitas."],
       "tests": ["Walkthrough com exemplos sintéticos.", "Revisão cruzada com ADR fiscal."],
       "testInstructions": {"prerequisites":["Documento da contabilidade."],"steps":["Revisar cenários.","Registrar aceite humano."],"expectedResultAndEvidence":["Matriz versionada sem dados pessoais desnecessários."],"dataImpact":"Nenhum.","cleanupAndRollback":["Reabrir se a premissa contábil mudar."],"stagingRestrictions":"Não usar documento fiscal real."},
       "likelyFiles": ["docs/fiscal/", ".workflow/workflow.json"],
@@ -262,7 +262,7 @@
         "Adapter de provider.",
         "Emissão automática."
       ],
-      "expectedBehavior": "Prepare usa decisão fiscal aprovada e vigente para empresa/estabelecimento e cenário. OS com peça incluída em preço único pode preparar uma NFS-e quando essa decisão assim determinar; mercadoria cobrada separadamente pode exigir NF-e correlacionada. Sem decisão aplicável, não prepara documento para emissão e sinaliza revisão. Issue/cancel exigem confirmação humana.",
+      "expectedBehavior": "Prepare usa decisão fiscal aprovada e vigente para empresa/estabelecimento e cenário. Preço único não determina NFS-e única: a decisão contábil fundamentada define documento(s), tributos e bases aplicáveis, inclusive para peças/partes empregadas na manutenção. Sem decisão aplicável ou valores necessários, não prepara documento para emissão e sinaliza revisão. Issue/cancel exigem confirmação humana.",
       "acceptanceCriteria": [
         "Não depende de Sale ou estoque central para preparar documentos de OS.",
         "XML é artefato principal e transições inválidas/regressivas são rejeitadas.",
@@ -271,7 +271,7 @@
       ],
       "tests": [
         "State machine, idempotência concorrente e tenant A/B com FatoComercial v2.",
-        "Fixtures de serviço, produto, misto com cobrança separada e preço único com peça incluída; decisão ausente bloqueia prepare; timeout seguido de consulta."
+        "Fixtures de serviço, produto, misto com cobrança separada e preço único com peça incluída; decisão ou valor fiscal necessário ausente bloqueia prepare; timeout seguido de consulta."
       ],
       "testInstructions": {
         "prerequisites": [
@@ -313,7 +313,7 @@
       "outOfScope": ["Escolher regra tributária automaticamente.", "Exibir segredo de volta."],
       "expectedBehavior": "Serviço usa segredo descriptografado apenas em memória e registra auditoria sanitizada.",
       "acceptanceCriteria": ["Master key fica fora do banco.", "Tenant A não referencia config de B.", "Decisão ausente, não aprovada ou fora da vigência bloqueia preparação; alterações não reclassificam documentos históricos."],
-      "tests": ["Encryption/rotação e negação tenant.", "Config incompleta bloqueia preparação.", "Decisões diferentes por empresa e cenário, inclusive NFS-e única para preço fechado e documentos correlacionados para cobrança separada."],
+      "tests": ["Encryption/rotação e negação tenant.", "Config incompleta bloqueia preparação.", "Decisões diferentes por empresa e cenário; preço fechado sem fundamentação ou valoração exigida bloqueia preparação; documentos correlacionados quando aprovados."],
       "testInstructions": {"prerequisites":["Chaves exclusivas de staging."],"steps":["Cadastrar/rotacionar config sintética.","Tentar leitura e uso cruzado."],"expectedResultAndEvidence":["Segredo nunca retorna ou aparece em log."],"dataImpact":"Somente configs de teste.","cleanupAndRollback":["Revogar e remover secrets de staging."],"stagingRestrictions":"Sem certificado real."},
       "likelyFiles": ["crates/fiscal/", "crates/secrets/", "migrations/"],
       "risks": ["Master key no banco.", "Segredo em log/erro."]
@@ -338,7 +338,7 @@
       "scope": ["Avaliar provider pela matriz fiscal.", "Implementar adapter e contract tests com XML como artefato principal."],
       "outOfScope": ["NFS-e.", "Documento real sem autorização."],
       "expectedBehavior": "NF-e de mercadoria converge com chave, XML, DANFE e eventos auditáveis.",
-      "acceptanceCriteria": ["Timeout consulta antes de retry.", "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único aprovado para NFS-e não cria NF-e por inferência dos itens."],
+      "acceptanceCriteria": ["Timeout consulta antes de retry.", "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único não dispensa NF-e exigida para peças/partes fornecidas."],
       "tests": ["Autorização/rejeição/consulta/cancelamento.", "Indeterminado, tenant A/B e venda mista."],
       "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de mercadoria e misto.","Forçar timeout e reconciliação."],"expectedResultAndEvidence":["Sem duplicidade e artefatos completos."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
       "likelyFiles": ["crates/fiscal/providers/", "tests/providers/nfe/"],
