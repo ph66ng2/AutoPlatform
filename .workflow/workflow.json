@@ -206,7 +206,7 @@
       "risks": ["Aprovar só caminho feliz.", "Confundir entitlement com flag local."]
     },
     {
-      "id": "AP-INV-001", "title": "Implementar núcleo de estoque central", "status": "in_progress", "blockedBy": ["AP-SEC-GATE-001", "AP-CONTRACT-001"],
+      "id": "AP-INV-001", "title": "Implementar núcleo de estoque central", "status": "merged", "blockedBy": ["AP-SEC-GATE-001", "AP-CONTRACT-001"],
       "context": "AutoBO é autoridade no bundle; movimentos são imutáveis e reserva não altera on_hand.",
       "objective": "Criar produtos, warehouse padrão, ledger, saldo, reservas, concorrência e comandos idempotentes.",
       "scope": ["Criar migrations e APIs de availability/reservation/movement.", "Implementar expiração, commit, release e reconciliação."],
@@ -660,7 +660,7 @@
     {
       "id": "AP-CONTRACT-002",
       "title": "Publicar FatoComercial faturável v2",
-      "status": "in_progress",
+      "status": "merged",
       "blockedBy": [
         "AP-CONTRACT-001"
       ],
