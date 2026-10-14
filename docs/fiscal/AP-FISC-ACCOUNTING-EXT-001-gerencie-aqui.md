@@ -26,10 +26,21 @@ Para configurar o cenário de manutenção com peça do cliente, conferir a OS e
 
 O FatoComercial v2 deve preservar descrição, itens e valores efetivamente cobrados na OS. O núcleo fiscal não deve converter automaticamente um item legado `Produto` em NF-e, nem usar `pricing_mode: bundle` para concluir que cabe apenas NFS-e. `AP-FISC-CORE-001` e `AP-FISC-CONFIG-001` já exigem decisão fiscal fundamentada por empresa, estabelecimento e cenário, e bloqueiam preparação quando faltar regra ou valor necessário. A inspeção do legado reforça esses critérios; não altera o contrato v2 nem autoriza emissão.
 
-## Evidência que ainda falta para desbloquear
+## Matriz piloto em preparação
+
+| Cenário | Prática informada | Documento observado/proposto | Decisão ainda necessária |
+| --- | --- | --- | --- |
+| OS de serviço sem troca de peça | Apenas mão de obra | NFS-e | Confirmar código municipal, base, retenções e vigência com a contabilidade. |
+| OS de serviço com peça do cliente | Apenas mão de obra; sem venda da peça pela BMITAG | NFS-e única proposta; uma NFS-e de manutenção com troca de componente foi apresentada sem identificação da origem da peça | Vincular OS e nota; confirmar origem da peça e código aplicável: a nota apresentada usa 14.02, enquanto o relato da OS 63 propõe 14.01. |
+| OS de serviço com peça fornecida pela BMITAG, com preço único ou itemizada | Informada como não praticada no piloto BMITAG | Não aplicável ao piloto, sujeito à confirmação contábil | Manter fluxo configurável e bloqueado até decisão específica de empresa e cenário; não pedir OS artificial. |
+| Venda de mercadoria fora da OS | NF-e observadas no emissor legado | NF-e | Vincular exemplo e confirmar CFOP, NCM, CST/CSOSN, base, estabelecimento e vigência. |
+
+Esta tabela é um rascunho de trabalho, não uma matriz contábil aprovada. Nenhuma linha deve ser ativada como regra de emissão até conter aprovação identificável da contabilidade.
+
+## Evidência que ainda falta para concluir o ticket
 
 1. Vincular a OS correspondente à NFS-e já apresentada e identificar o documento da OS 63, se distinto. O responsável informa que as OS de serviço cobram apenas mão de obra e usam, quando há troca, peças do cliente; conferir essa premissa nos exemplos históricos. Localizar os documentos efetivamente emitidos para os cenários praticados, inclusive venda de mercadoria fora da OS se houver. Registrar OS com peça fornecida pela BMITAG, com preço único ou cobrança separada, como não aplicáveis ao piloto enquanto não praticadas, sujeitas à confirmação contábil; não criar uma OS real apenas para produzir evidência. Usar cópias redigidas para revisão; não adicionar documentos reais ou dados pessoais ao repositório público.
 2. Obter a decisão escrita do contador para cada cenário praticado e a classificação explícita dos não praticados: enquadramento, NFS-e/NF-e exigida(s), código municipal de serviço, CFOP/NCM e CST/CSOSN quando aplicáveis, retenções, bases e critério de valoração se o preço único abranger serviço e peça. Enfrentar expressamente a ressalva de peças/partes do subitem 14.01 da [LC 116/2003](https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp116.htm), distinguindo peça fornecida, material consumido e peça do cliente.
 3. Confirmar o fluxo entre a OS e a NFS-e apresentada no portal Nota Salvador, inclusive quem iniciou a emissão e como a referência à OS foi registrada. Registrar limitações por município, regime, estabelecimento e vigência da decisão.
 
-**Estado:** `blocked`. A aprovação relatada em conversa para NFS-e única deve ser vinculada ao cenário e ao fundamento escrito do contador antes de liberar configuração e provider. A existência de NF-e autorizadas ou de um cadastro legado não satisfaz esse aceite.
+**Estado:** `ready` para preparar e revisar a matriz; aceite pendente. A aprovação relatada em conversa para NFS-e única deve ser vinculada ao cenário e ao fundamento escrito do contador antes de liberar configuração e provider. A existência de NF-e autorizadas ou de um cadastro legado não satisfaz esse aceite.
