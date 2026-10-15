@@ -13,7 +13,7 @@ Este documento orienta a **prioridade**. Os três `.workflow/workflow.json` cont
 | Governança | `AO-WF-RECONCILE-001` | Revisar os três PRs de roadmap e registrar itens ativos, adiados e substituídos. |
 | Ownership | `AO-SUITE-001` | AutoOS é autoridade de cliente, produto, serviço e estoque; equipamento e OS pertencem à operação. |
 | Contrato | `AP-CONTRACT-002` | FatoComercial v2 versionado, imutável após ingestão, validado com OS de serviço, produto e mista; v1 compatível. |
-| Condição externa | `AP-FISC-ACCOUNTING-EXT-001` | Matriz fiscal BMITAG validada pela contabilidade; permanece `blocked` até confirmação humana. |
+| Condição externa | `AP-FISC-ACCOUNTING-EXT-001` | `ready` para preparar a matriz BMITAG; aceite exige decisões contábeis completas por cenário. A orientação da OS 63 cobre peças do cliente e NFS-e única nesse caso. |
 
 `AP-INV-001` possui [PR #9 mergeado](https://github.com/ph66ng2/AutoPlatform/pull/9) e ainda aparece `in_progress` no catálogo. Conciliar evidência e aceite antes de mudar o status. Estoque central e `AP-SALE-001` não bloqueiam o núcleo Fiscal.
 
