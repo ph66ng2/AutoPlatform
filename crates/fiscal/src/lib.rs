@@ -1,7 +1,20 @@
-//! Fronteira do módulo `fiscal`.
+//! Núcleo fiscal provider-neutral para fatos faturáveis v2 de OS.
 //!
-//! Perfis, documentos, eventos e máquina de estados fiscal sem provider. Não emite sozinho nem escolhe adapter.
-//! Este crate não referencia outros domínios.
+//! Não escolhe regra tributária, não emite automaticamente e não depende de
+//! Sale, estoque ou de tabelas de documentos fiscais importados.
+
+mod engine;
+mod model;
+mod plan;
+mod store;
+
+pub use engine::{cancel, consult, issue};
+pub use model::{
+    DecisionResolver, DocumentKind, DocumentPlan, DocumentState, FiscalDecision, FiscalError,
+    FiscalProvider, HumanConfirmation, PreparedDocument, ProviderOutcome, ProviderRequest,
+};
+pub use plan::prepare_plan;
+pub use store::{prepare, transition};
 
 ap_kernel::declare_module!("fiscal");
 
