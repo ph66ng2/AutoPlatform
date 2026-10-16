@@ -92,6 +92,21 @@ impl FiscalProvider for FakeProvider {
         ProviderOutcome::Cancelled
     }
 }
+struct FixedProvider {
+    consultation: ProviderOutcome,
+    cancellation: ProviderOutcome,
+}
+impl FiscalProvider for FixedProvider {
+    fn issue(&self, _: &ProviderRequest) -> ProviderOutcome {
+        ProviderOutcome::Indeterminate
+    }
+    fn cancel(&self, _: &ProviderRequest) -> ProviderOutcome {
+        self.cancellation.clone()
+    }
+    fn consult(&self, _: &ProviderRequest) -> ProviderOutcome {
+        self.consultation.clone()
+    }
+}
 impl DecisionResolver for Resolver {
     fn approved_decision(
         &self,
@@ -351,6 +366,93 @@ fn tenant_isolation_concurrent_prepare_and_state_machine() {
             &provider
         )
         .expect("cancelled"),
+        DocumentState::Cancelled
+    );
+    let second_fact = fixture("servico.json");
+    let second = prepare(
+        &mut client,
+        session(),
+        profile(),
+        &second_fact,
+        "os-maintenance",
+        2,
+        &Resolver(Some(decision(&second_fact, DocumentKind::Nfse, "14.02"))),
+    )
+    .expect("second fact");
+    let second_id = second[0].id;
+    // Simula término do processo depois de persistir a intenção, antes de salvar a resposta.
+    transition(
+        &mut client,
+        session(),
+        second_id,
+        DocumentState::Prepared,
+        DocumentState::Sending,
+        Some(HumanConfirmation {
+            actor_id: account(),
+        }),
+        None,
+    )
+    .expect("in flight issue");
+    let authorized = FixedProvider {
+        consultation: ProviderOutcome::Authorized {
+            xml: b"<xml>recovered</xml>".to_vec(),
+        },
+        cancellation: ProviderOutcome::Indeterminate,
+    };
+    assert_eq!(
+        consult(&mut client, session(), second_id, &authorized).expect("recover issue"),
+        DocumentState::Authorized
+    );
+    assert_eq!(
+        cancel(
+            &mut client,
+            session(),
+            second_id,
+            HumanConfirmation {
+                actor_id: account()
+            },
+            &authorized
+        )
+        .expect("cancel timeout"),
+        DocumentState::Indeterminate
+    );
+    let rejected_cancel = FixedProvider {
+        consultation: ProviderOutcome::Rejected,
+        cancellation: ProviderOutcome::Cancelled,
+    };
+    assert_eq!(
+        consult(&mut client, session(), second_id, &rejected_cancel)
+            .expect("rejected cancellation"),
+        DocumentState::Authorized
+    );
+    transition(
+        &mut client,
+        session(),
+        second_id,
+        DocumentState::Authorized,
+        DocumentState::CancelPending,
+        Some(HumanConfirmation {
+            actor_id: account(),
+        }),
+        None,
+    )
+    .expect("in flight cancel");
+    assert_eq!(
+        consult(&mut client, session(), second_id, &rejected_cancel)
+            .expect("recover pending cancel"),
+        DocumentState::Authorized
+    );
+    assert_eq!(
+        cancel(
+            &mut client,
+            session(),
+            second_id,
+            HumanConfirmation {
+                actor_id: account()
+            },
+            &rejected_cancel
+        )
+        .expect("retry confirmed cancellation"),
         DocumentState::Cancelled
     );
     drop(client);
