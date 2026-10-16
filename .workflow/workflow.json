@@ -247,7 +247,7 @@
     {
       "id": "AP-FISC-CORE-001",
       "title": "Criar núcleo fiscal provider-neutral",
-      "status": "ready",
+      "status": "review",
       "blockedBy": [
         "AP-CONTRACT-002"
       ],
