@@ -28,7 +28,7 @@ fn request(
     )
     .map_err(|_| FiscalError::Database)?;
     let row = tx.query_opt(
-        "SELECT d.kind,d.fiscal_code,d.amount_cents,d.tax_base_cents,f.payload::text,d.fact_id,d.plan_key,d.state,d.operation FROM fiscal.documents d JOIN fiscal.fact_snapshots f ON f.company_id=d.company_id AND f.fact_id=d.fact_id WHERE d.company_id=$1 AND d.id=$2",
+        "SELECT d.kind,d.fiscal_code,d.amount_cents,d.tax_base_cents,f.payload::text,d.fact_id,d.plan_key,d.state,COALESCE(d.operation,(SELECT CASE e.kind WHEN 'issue_confirmed' THEN 'issue' ELSE 'cancel' END FROM fiscal.document_events e WHERE e.company_id=d.company_id AND e.document_id=d.id AND e.kind IN ('issue_confirmed','cancel_confirmed') ORDER BY e.occurred_at DESC,e.id DESC LIMIT 1)) FROM fiscal.documents d JOIN fiscal.fact_snapshots f ON f.company_id=d.company_id AND f.fact_id=d.fact_id WHERE d.company_id=$1 AND d.id=$2",
         &[&session.company_id, &document_id],
     ).map_err(|_| FiscalError::Database)?.ok_or(FiscalError::NotFound)?;
     let state = DocumentState::from_db(row.get::<_, &str>(7)).ok_or(FiscalError::Database)?;

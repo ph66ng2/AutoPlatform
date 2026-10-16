@@ -69,7 +69,6 @@ CREATE TABLE fiscal.documents (
         'prepared', 'sending', 'authorized', 'rejected', 'indeterminate',
         'cancel_pending', 'cancelled'
     )),
-    operation text NOT NULL DEFAULT 'none' CHECK (operation IN ('none', 'issue', 'cancel')),
     external_key text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -77,11 +76,7 @@ CREATE TABLE fiscal.documents (
     UNIQUE (company_id, fact_id, plan_key),
     FOREIGN KEY (company_id, fact_id) REFERENCES fiscal.fact_snapshots(company_id, fact_id),
     FOREIGN KEY (company_id, profile_id) REFERENCES fiscal.issuer_profiles(company_id, id),
-    CHECK (plan_key <> '' AND scenario <> ''),
-    CHECK ((state IN ('prepared', 'authorized', 'rejected', 'cancelled') AND operation = 'none') OR
-           (state = 'sending' AND operation = 'issue') OR
-           (state = 'cancel_pending' AND operation = 'cancel') OR
-           (state = 'indeterminate' AND operation IN ('issue', 'cancel')))
+    CHECK (plan_key <> '' AND scenario <> '')
 );
 CREATE INDEX documents_profile_idx ON fiscal.documents(company_id, profile_id);
 
@@ -143,14 +138,6 @@ BEGIN
     ) THEN
         RAISE EXCEPTION 'fiscal:transition';
     END IF;
-    IF (NEW.state = 'sending' AND NEW.operation <> 'issue') OR
-       (NEW.state = 'cancel_pending' AND NEW.operation <> 'cancel') OR
-       (NEW.state = 'indeterminate' AND NEW.operation <> OLD.operation) OR
-       (NEW.state IN ('authorized', 'rejected', 'cancelled') AND NEW.operation <> 'none') OR
-       (OLD.state = 'indeterminate' AND OLD.operation = 'issue' AND NEW.state = 'cancelled') OR
-       (OLD.state = 'indeterminate' AND OLD.operation = 'cancel' AND NEW.state = 'rejected') THEN
-        RAISE EXCEPTION 'fiscal:operation';
-    END IF;
     IF NEW.state = 'authorized' AND NOT EXISTS (
         SELECT 1 FROM fiscal.document_artifacts
         WHERE company_id = NEW.company_id AND document_id = NEW.id AND kind = 'xml'
@@ -168,7 +155,7 @@ GRANT USAGE ON SCHEMA fiscal TO fiscal_app;
 GRANT SELECT, INSERT ON fiscal.issuer_profiles, fiscal.fact_snapshots,
     fiscal.documents, fiscal.document_items, fiscal.document_events,
     fiscal.document_artifacts TO fiscal_app;
-GRANT UPDATE (state, operation, external_key) ON fiscal.documents TO fiscal_app;
+GRANT UPDATE (state, external_key) ON fiscal.documents TO fiscal_app;
 
 ALTER TABLE fiscal.issuer_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fiscal.issuer_profiles FORCE ROW LEVEL SECURITY;

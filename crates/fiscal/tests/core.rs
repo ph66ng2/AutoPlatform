@@ -233,6 +233,37 @@ fn tenant_isolation_concurrent_prepare_and_state_machine() {
       INSERT INTO fiscal.issuer_profiles(company_id,id,establishment_id,label) VALUES
       ('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-0000000000c1','00000000-0000-4000-8000-0000000000b1','a'),
       ('00000000-0000-4000-8000-0000000000d1','00000000-0000-4000-8000-0000000000d4','00000000-0000-4000-8000-0000000000d5','b');").expect("seed");
+    // Um envio iniciado na versão anterior precisa continuar consultável após a migration aditiva.
+    let old_fact = fixture("servico.json").to_string();
+    let old_id = id("00000000-0000-4000-8000-0000000000c4");
+    client.execute("INSERT INTO fiscal.fact_snapshots(company_id,fact_id,os_id,os_version,origin,payload_hash,payload) VALUES($1,$2,$3,1,'autoos',$4,($5::text)::jsonb)",
+        &[&company(), &id("00000000-0000-4000-8000-0000000000c2"), &id("00000000-0000-4000-8000-0000000000c3"), &"a".repeat(64), &old_fact]).expect("old fact");
+    client.execute("INSERT INTO fiscal.documents(company_id,id,fact_id,profile_id,plan_key,plan_hash,decision_version,scenario,kind,fiscal_code,amount_cents,tax_base_cents) VALUES($1,$2,$3,$4,'old-plan',$5,1,'os-maintenance','nfse','14.02',15000,15000)",
+        &[&company(), &old_id, &id("00000000-0000-4000-8000-0000000000c2"), &profile(), &"b".repeat(64)]).expect("old document");
+    client
+        .execute(
+            "UPDATE fiscal.documents SET state='sending' WHERE company_id=$1 AND id=$2",
+            &[&company(), &old_id],
+        )
+        .expect("old in flight");
+    client.execute("INSERT INTO fiscal.document_events(company_id,id,document_id,actor_id,kind) VALUES($1,$2,$3,$4,'issue_confirmed')",
+        &[&company(), &Uuid::new_v4(), &old_id, &account()]).expect("old event");
+    let sql = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../migrations/0005_fiscal_operation_recovery.sql"),
+    )
+    .expect("migration 0005");
+    client.batch_execute(&sql).expect("additive migration");
+    let recovered = FixedProvider {
+        consultation: ProviderOutcome::Authorized {
+            xml: b"<xml>old</xml>".to_vec(),
+        },
+        cancellation: ProviderOutcome::Cancelled,
+    };
+    assert_eq!(
+        consult(&mut client, session(), old_id, &recovered).expect("old in-flight recovery"),
+        DocumentState::Authorized
+    );
     let fact = fixture("mista-preco-unico.json");
     let resolver = Resolver(Some(decision(&fact, DocumentKind::Nfse, "14.02")));
     let barrier = Arc::new(Barrier::new(2));

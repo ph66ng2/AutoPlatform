@@ -134,7 +134,7 @@ pub fn transition(
     .map_err(|_| FiscalError::Database)?;
     let row = tx
         .query_opt(
-            "SELECT state,operation FROM fiscal.documents WHERE company_id=$1 AND id=$2 FOR UPDATE",
+            "SELECT d.state,COALESCE(d.operation,(SELECT CASE e.kind WHEN 'issue_confirmed' THEN 'issue' ELSE 'cancel' END FROM fiscal.document_events e WHERE e.company_id=d.company_id AND e.document_id=d.id AND e.kind IN ('issue_confirmed','cancel_confirmed') ORDER BY e.occurred_at DESC,e.id DESC LIMIT 1)) FROM fiscal.documents d WHERE d.company_id=$1 AND d.id=$2 FOR UPDATE",
             &[&session.company_id, &document_id],
         )
         .map_err(|_| FiscalError::Database)?
