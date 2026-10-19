@@ -38,6 +38,7 @@ integration_api=
 postgres_container=
 network=
 response_file=$(mktemp)
+fixture_b=$(mktemp)
 cleanup() {
   docker rm --force "$api" "$worker" >/dev/null 2>&1 || true
   if [[ -n "$integration_api" ]]; then
@@ -49,7 +50,7 @@ cleanup() {
   if [[ -n "$network" ]]; then
     docker network rm "$network" >/dev/null 2>&1 || true
   fi
-  rm -f "$response_file"
+  rm -f "$response_file" "$fixture_b"
 }
 trap cleanup EXIT
 
@@ -84,13 +85,19 @@ for migration in "$root"/migrations/[0-9][0-9][0-9][0-9]_*.sql; do
 done
 docker exec -i "$postgres_container" psql -v ON_ERROR_STOP=1 -U "$pg_user" -d autoplatform >/dev/null <<'SQL'
 INSERT INTO identity.companies(id,label,status)
-VALUES ('00000000-0000-4000-8000-0000000000a1','synthetic','active');
+VALUES ('00000000-0000-4000-8000-0000000000a1','synthetic-a','active'),
+       ('00000000-0000-4000-8000-0000000000d1','synthetic-b','active');
 INSERT INTO identity.accounts(id,status)
-VALUES ('00000000-0000-4000-8000-0000000000a2','active');
+VALUES ('00000000-0000-4000-8000-0000000000a2','active'),
+       ('00000000-0000-4000-8000-0000000000d2','active');
 INSERT INTO identity.memberships(company_id,id,account_id,product,role,status)
 VALUES ('00000000-0000-4000-8000-0000000000a1',
         '00000000-0000-4000-8000-0000000000a3',
         '00000000-0000-4000-8000-0000000000a2',
+        'autoos','operator','active'),
+       ('00000000-0000-4000-8000-0000000000d1',
+        '00000000-0000-4000-8000-0000000000d3',
+        '00000000-0000-4000-8000-0000000000d2',
         'autoos','operator','active');
 SQL
 database_scheme=postgres
@@ -102,7 +109,8 @@ actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' "htt
 [[ "$actual" == 503 ]]
 docker exec -i "$postgres_container" psql -v ON_ERROR_STOP=1 -U "$pg_user" -d autoplatform < "$root/migrations/0007_commercial_fact_keys.sql" >/dev/null
 wait_http "http://127.0.0.1:$((port + 2))/ready"
-token=$(AP_CI_JWT_SECRET="$jwt_secret" python3 - <<'PY'
+issue_token() {
+  AP_CI_JWT_SECRET="$jwt_secret" AP_CI_ACCOUNT_ID="$1" python3 - <<'PY'
 import base64
 import hashlib
 import hmac
@@ -115,7 +123,7 @@ def encode(value):
     return base64.urlsafe_b64encode(raw).decode().rstrip("=")
 
 message = encode({"alg": "HS256", "typ": "JWT"}) + "." + encode({
-    "sub": "00000000-0000-4000-8000-0000000000a2",
+    "sub": os.environ["AP_CI_ACCOUNT_ID"],
     "role": "authenticated",
     "aud": "authenticated",
     "exp": int(time.time()) + 600,
@@ -123,16 +131,54 @@ message = encode({"alg": "HS256", "typ": "JWT"}) + "." + encode({
 signature = hmac.new(os.environ["AP_CI_JWT_SECRET"].encode(), message.encode(), hashlib.sha256).digest()
 print(message + "." + base64.urlsafe_b64encode(signature).decode().rstrip("="))
 PY
-)
+}
+token=$(issue_token '00000000-0000-4000-8000-0000000000a2')
+token_b=$(issue_token '00000000-0000-4000-8000-0000000000d2')
 for expected in 201 200; do
   actual=$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' --header "Authorization: Bearer $token" --header 'x-company-id: 00000000-0000-4000-8000-0000000000a1' --header 'Content-Type: application/json' --data-binary "@$root/contracts/v2/examples/valid/servico.json" "http://127.0.0.1:$((port + 2))/v2/commercial-facts")
   [[ "$actual" == "$expected" ]]
   [[ $(cat "$response_file") == *'"fact_id":"00000000-0000-4000-8000-000000000011"'* ]]
 done
+# Gate HTTP: o contrato publicado distingue tenants e conserva a chave no replay.
+python3 - "$root/contracts/v2/examples/valid/servico.json" "$fixture_b" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as source:
+    fact = json.load(source)
+fact.update({
+    "company_id": "00000000-0000-4000-8000-0000000000d1",
+    "fact_id": "00000000-0000-4000-8000-0000000000d5",
+    "event_id": "00000000-0000-4000-8000-0000000000d6",
+    "os_id": "00000000-0000-4000-8000-0000000000d7",
+    "correlation_id": "corr-container-synthetic-b-0001",
+    "idempotency_key": "idem-container-synthetic-b-0001",
+})
+with open(sys.argv[2], "w", encoding="utf-8") as target:
+    json.dump(fact, target)
+PY
+for expected in 201 200; do
+  actual=$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' --header "Authorization: Bearer $token_b" --header 'x-company-id: 00000000-0000-4000-8000-0000000000d1' --header 'Content-Type: application/json' --data-binary "@$fixture_b" "http://127.0.0.1:$((port + 2))/v2/commercial-facts")
+  [[ "$actual" == "$expected" ]]
+  [[ $(cat "$response_file") == *'"fact_id":"00000000-0000-4000-8000-0000000000d5"'* ]]
+done
+actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' --header "Authorization: Bearer $token_b" --header 'x-company-id: 00000000-0000-4000-8000-0000000000d1' "http://127.0.0.1:$((port + 2))/v2/commercial-facts/00000000-0000-4000-8000-000000000011")
+[[ "$actual" == 404 ]]
+actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' --header "Authorization: Bearer $token" --header 'x-company-id: 00000000-0000-4000-8000-0000000000a1' "http://127.0.0.1:$((port + 2))/v2/commercial-facts/00000000-0000-4000-8000-0000000000d5")
+[[ "$actual" == 404 ]]
+actual=$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' --header "Authorization: Bearer $token" --header 'x-company-id: 00000000-0000-4000-8000-0000000000a1' 'http://127.0.0.1:'"$((port + 2))"'/v2/commercial-facts?correlation_id=corr-os-synthetic-0001')
+[[ "$actual" == 200 ]]
+[[ $(cat "$response_file") == *'"fact_id":"00000000-0000-4000-8000-000000000011"'* ]]
+snapshot_count=$(docker exec "$postgres_container" psql -At -U "$pg_user" -d autoplatform -c 'SELECT count(*) FROM fiscal.fact_snapshots')
+[[ "$snapshot_count" == 2 ]]
 expected_tenant=$(printf %s '00000000-0000-4000-8000-0000000000a1' | sha256sum | cut -d' ' -f1)
 docker logs "$integration_api" 2>&1 | grep -F "\"tenant\":\"$expected_tenant\"" >/dev/null
 docker stop "$postgres_container" >/dev/null
 actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' "http://127.0.0.1:$((port + 2))/ready")
+[[ "$actual" == 503 ]]
+actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' "http://127.0.0.1:$((port + 2))/health")
+[[ "$actual" == 200 ]]
+actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' --header "Authorization: Bearer $token" --header 'x-company-id: 00000000-0000-4000-8000-0000000000a1' --header 'Content-Type: application/json' --data-binary "@$root/contracts/v2/examples/valid/servico.json" "http://127.0.0.1:$((port + 2))/v2/commercial-facts")
 [[ "$actual" == 503 ]]
 
 prove_image_has_no_secrets() {

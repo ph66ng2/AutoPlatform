@@ -528,7 +528,7 @@
       ]
     },
     {
-      "id": "AP-INTEGRATION-GATE-001", "title": "Homologar Produto em Sincronia no AutoPlatform", "status": "ready", "blockedBy": ["AP-INTEGRATION-001", "AP-INV-001"],
+      "id": "AP-INTEGRATION-GATE-001", "title": "Homologar Produto em Sincronia no AutoPlatform", "status": "merged", "blockedBy": ["AP-INTEGRATION-001", "AP-INV-001"],
       "context": "Gate server-side antecede a homologação conjunta dos desktops.",
       "objective": "Provar contratos, isolamento, indisponibilidade e comandos de estoque com fakes AutoOS/AutoBO.",
       "scope": ["Executar E2E contratual com dois tenants.", "Publicar evidência para tickets espelho dos clientes."],

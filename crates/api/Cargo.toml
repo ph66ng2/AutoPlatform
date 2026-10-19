@@ -32,5 +32,12 @@ serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 
+[dev-dependencies]
+sha2.workspace = true
+
+[[test]]
+name = "product_sync_gate"
+path = "../../tests/e2e/integration/product_sync_gate.rs"
+
 [lints]
 workspace = true
