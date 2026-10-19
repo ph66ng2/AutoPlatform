@@ -15,7 +15,7 @@ pagamento nem um registro financeiro persistido.
 | Resposta perdida e retry | Busca por correlação retorna o fato; retry devolve `created=false`; total de snapshots permanece 2. |
 | AutoBO fiscal | Leitura do tenant A encontra o fato; tenant B recebe `NotFound`; uma intenção sintética `pending` valida o contrato v1. |
 | Estoque | Reserva repetida devolve o mesmo ID e produz um comando; A conserva 1 unidade disponível, B conserva 5. Evento de estoque valida o contrato v1 com a mesma correlação. |
-| Indisponibilidade | Conexão indisponível falha; após recuperação, fato e saldo continuam consultáveis e sem duplicidade. |
+| Indisponibilidade | Banco de fixtures desabilitado e sessão encerrada; novas conexões falham. Após reabertura e reconexão, fato e saldo continuam consultáveis e sem duplicidade. |
 | Rota HTTP publicada | A imagem aceita publicação e replay de A/B (201/200), nega leitura cruzada (404), mantém dois snapshots e responde 503 na ingestão e no readiness com banco parado, enquanto `/health` continua 200. |
 
 ## Identificadores e schemas reproduzíveis

@@ -1,6 +1,6 @@
 //! Gate contratual com clientes falsos e PostgreSQL descartável. Sem provider real.
 
-use std::{env, fs, path::Path, time::Duration};
+use std::{env, fs, path::Path};
 
 use ap_identity::{Product, Role, Session};
 use ap_integration::{find, find_by_correlation, find_for_fiscal, ingest, IngestError};
@@ -21,7 +21,7 @@ fn id(value: &str) -> Uuid {
     Uuid::parse_str(value).expect("synthetic UUID")
 }
 
-fn connect(database: &str) -> Client {
+fn connection_config(database: &str) -> postgres::Config {
     let mut config = postgres::Config::new();
     config
         .host(&env::var("PGHOST").expect("PGHOST"))
@@ -29,11 +29,29 @@ fn connect(database: &str) -> Client {
         .user(&env::var("PGUSER").expect("PGUSER"))
         .password(env::var("PGPASSWORD").expect("PGPASSWORD"))
         .dbname(database);
-    config.connect(NoTls).expect("fixture postgres")
+    config
+}
+
+fn connect(database: &str) -> Client {
+    connection_config(database)
+        .connect(NoTls)
+        .expect("fixture postgres")
 }
 
 fn reset_database() {
     let mut admin = connect("postgres");
+    let exists: bool = admin
+        .query_one(
+            "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)",
+            &[&DATABASE],
+        )
+        .expect("fixture database lookup")
+        .get(0);
+    if exists {
+        admin
+            .batch_execute(&format!("ALTER DATABASE {DATABASE} ALLOW_CONNECTIONS true"))
+            .expect("restore fixture connections");
+    }
     admin
         .query(
             "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1 AND pid<>pg_backend_pid()",
@@ -270,16 +288,27 @@ fn two_tenant_journey_retry_and_unavailable() {
         1
     );
 
-    // Fake de indisponibilidade: falha de conexão; o fato persistido e o saldo
-    // permanecem intactos, e a leitura após recuperação decide o retry.
-    let mut unavailable = postgres::Config::new();
-    unavailable
-        .host("127.0.0.1")
-        .port(1)
-        .connect_timeout(Duration::from_millis(200))
-        .dbname(DATABASE);
-    assert!(unavailable.connect(NoTls).is_err());
-    db.batch_execute("RESET ROLE").expect("reset role");
+    // O próprio banco de fixtures fica indisponível. Encerramos a sessão
+    // ativa, recusamos novas conexões e só então reabrimos e reconectamos.
+    let mut admin = connect("postgres");
+    admin
+        .batch_execute(&format!(
+            "ALTER DATABASE {DATABASE} ALLOW_CONNECTIONS false"
+        ))
+        .expect("disable fixture database");
+    admin
+        .query(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1 AND pid<>pg_backend_pid()",
+            &[&DATABASE],
+        )
+        .expect("terminate fixture connection");
+    assert!(db.query_one("SELECT 1", &[]).is_err());
+    assert!(connection_config(DATABASE).connect(NoTls).is_err());
+    admin
+        .batch_execute(&format!("ALTER DATABASE {DATABASE} ALLOW_CONNECTIONS true"))
+        .expect("restore fixture database");
+    drop(db);
+    let mut db = connect(DATABASE);
     assert_eq!(
         find_by_correlation(&mut db, id(COMPANY_A), id(ACCOUNT_A), correlation)
             .expect("recovered lookup")
