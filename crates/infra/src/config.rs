@@ -111,6 +111,15 @@ pub struct AppConfig {
 
 impl AppConfig {
     #[must_use]
+    pub const fn environment(&self) -> Environment {
+        self.environment
+    }
+    /// URL somente para conexão em memória; nunca incluir em erro ou log.
+    #[must_use]
+    pub fn database_url(&self) -> Option<&str> {
+        self.database_url.as_ref().map(|secret| secret.0.as_str())
+    }
+    #[must_use]
     pub(crate) fn database_configured(&self) -> bool {
         self.database_url
             .as_ref()

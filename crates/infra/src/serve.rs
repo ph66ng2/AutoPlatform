@@ -1,12 +1,13 @@
-use std::{future::Future, io};
+use std::io;
 
+use axum::{middleware::from_fn, Router};
 use thiserror::Error;
 use tokio::net::TcpListener;
 
 use crate::{
     config::AppConfig,
     health::{router, AppState},
-    telemetry::{init_tracing, log_startup},
+    telemetry::{init_tracing, log_startup, propagate_context},
 };
 
 #[derive(Debug, Error)]
@@ -22,6 +23,14 @@ pub enum ServeError {
 }
 
 pub async fn serve(config: AppConfig, modules: &'static [&'static str]) -> Result<(), ServeError> {
+    serve_with(config, modules, Router::new()).await
+}
+
+pub async fn serve_with(
+    config: AppConfig,
+    modules: &'static [&'static str],
+    extra: Router,
+) -> Result<(), ServeError> {
     init_tracing();
     log_startup(&config, modules);
     let listener = TcpListener::bind(config.http_bind)
@@ -30,15 +39,24 @@ pub async fn serve(config: AppConfig, modules: &'static [&'static str]) -> Resul
             bind: config.http_bind,
             source,
         })?;
-    serve_listener(listener, AppState::from_config(&config), shutdown_signal()).await
+    axum::serve(
+        listener,
+        router(AppState::from_config(&config))
+            .merge(extra)
+            .layer(from_fn(propagate_context)),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .map_err(ServeError::Http)
 }
 
+#[cfg(test)]
 pub(crate) async fn serve_listener(
     listener: TcpListener,
     state: AppState,
-    shutdown: impl Future<Output = ()> + Send + 'static,
+    shutdown: impl std::future::Future<Output = ()> + Send + 'static,
 ) -> Result<(), ServeError> {
-    axum::serve(listener, router(state))
+    axum::serve(listener, router(state).layer(from_fn(propagate_context)))
         .with_graceful_shutdown(shutdown)
         .await
         .map_err(ServeError::Http)

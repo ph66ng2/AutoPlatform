@@ -26,6 +26,11 @@ ap-audit = { path = "../audit" }
 ap-infra = { path = "../infra" }
 ap-kernel = { path = "../kernel" }
 tokio.workspace = true
+axum.workspace = true
+postgres.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
 
 [lints]
 workspace = true

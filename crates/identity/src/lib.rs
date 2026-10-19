@@ -12,6 +12,11 @@ use uuid::Uuid;
 
 use jwt::account_id;
 
+/// Autentica o JWT; a autorização por empresa ainda exige membership ativa no banco.
+pub fn authenticate(secret: &JwtSecret, token: &str) -> Result<Uuid, AccessError> {
+    account_id(secret, token)
+}
+
 pub use directory::{
     AuditEntry, Directory, MembershipRejected, MembershipStatus, MemoryDirectory, PartyStatus,
 };
