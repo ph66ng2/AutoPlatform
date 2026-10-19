@@ -6,6 +6,7 @@ use ap_integration::{
 };
 use postgres::{Client, NoTls};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 fn db(name: &str) -> Client {
@@ -77,6 +78,59 @@ fn tenant_idempotency_conflict_concurrent_and_recovery() {
     let other_account = id("00000000-0000-4000-8000-0000000000d2");
     let fact = fixture();
     let fact_id = id(fact["fact_id"].as_str().expect("fact id"));
+    // Snapshot antigo: a migration 0006 criou as colunas, mas elas ainda são NULL.
+    let mut legacy = fact.clone();
+    legacy["fact_id"] = Uuid::new_v4().to_string().into();
+    legacy["event_id"] = Uuid::new_v4().to_string().into();
+    legacy["os_id"] = Uuid::new_v4().to_string().into();
+    legacy["idempotency_key"] = "idem-legacy-synthetic-0001".into();
+    legacy["correlation_id"] = "corr-legacy-synthetic-0001".into();
+    let legacy_json = legacy.to_string();
+    let legacy_hash = format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(&legacy).expect("json"))
+    );
+    client.execute(
+        "INSERT INTO fiscal.fact_snapshots(company_id,fact_id,os_id,os_version,origin,payload_hash,payload) VALUES($1,$2,$3,1,'autoos',$4,($5::text)::jsonb)",
+        &[&company, &id(legacy["fact_id"].as_str().expect("fact")), &id(legacy["os_id"].as_str().expect("os")), &legacy_hash, &legacy_json],
+    ).expect("legacy snapshot");
+    let migration = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../migrations/0007_commercial_fact_keys.sql"),
+    )
+    .expect("migration 0007");
+    client.batch_execute(&migration).expect("backfill");
+    assert!(
+        !ingest(&mut client, company, account, &legacy)
+            .expect("legacy retry")
+            .created
+    );
+    assert_eq!(
+        find_by_correlation(&mut client, company, account, "corr-legacy-synthetic-0001")
+            .expect("legacy correlation"),
+        vec![legacy]
+    );
+    // O caminho fiscal legado omite as colunas; o trigger preenche a partir do payload.
+    let mut later = fact.clone();
+    later["fact_id"] = Uuid::new_v4().to_string().into();
+    later["event_id"] = Uuid::new_v4().to_string().into();
+    later["os_id"] = Uuid::new_v4().to_string().into();
+    later["idempotency_key"] = "idem-later-synthetic-0001".into();
+    later["correlation_id"] = "corr-later-synthetic-0001".into();
+    let later_json = later.to_string();
+    let later_hash = format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(&later).expect("json"))
+    );
+    client.execute(
+        "INSERT INTO fiscal.fact_snapshots(company_id,fact_id,os_id,os_version,origin,payload_hash,payload) VALUES($1,$2,$3,1,'autoos',$4,($5::text)::jsonb)",
+        &[&company, &id(later["fact_id"].as_str().expect("fact")), &id(later["os_id"].as_str().expect("os")), &later_hash, &later_json],
+    ).expect("legacy insertion");
+    assert!(
+        !ingest(&mut client, company, account, &later)
+            .expect("later retry")
+            .created
+    );
     let mut invalid = fact.clone();
     invalid.as_object_mut().expect("object").remove("items");
     assert_eq!(

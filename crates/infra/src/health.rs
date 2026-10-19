@@ -1,12 +1,17 @@
-use axum::{extract::State, routing::get, Json, Router};
+use std::sync::Arc;
+
+use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
 use serde::Serialize;
 
 use crate::config::{AppConfig, Environment, ServiceKind};
 
-#[derive(Clone, Copy)]
+pub(crate) type ReadinessProbe = Arc<dyn Fn() -> bool + Send + Sync>;
+
+#[derive(Clone)]
 pub(crate) struct AppState {
     service: ServiceKind,
     environment: Environment,
+    readiness: Option<ReadinessProbe>,
 }
 
 impl AppState {
@@ -14,7 +19,13 @@ impl AppState {
         Self {
             service: config.service,
             environment: config.environment,
+            readiness: None,
         }
+    }
+
+    pub(crate) fn with_readiness(mut self, probe: ReadinessProbe) -> Self {
+        self.readiness = Some(probe);
+        self
     }
 }
 
@@ -46,11 +57,25 @@ async fn health(State(state): State<AppState>) -> Json<HealthBody<'static>> {
     })
 }
 
-async fn ready(State(state): State<AppState>) -> Json<ReadyBody<'static>> {
-    Json(ReadyBody {
-        status: "ready",
-        service: state.service.as_str(),
-        environment: state.environment.as_str(),
-        migrations_on_startup: false,
-    })
+async fn ready(State(state): State<AppState>) -> (StatusCode, Json<ReadyBody<'static>>) {
+    let healthy = if let Some(probe) = state.readiness {
+        tokio::task::spawn_blocking(move || probe())
+            .await
+            .unwrap_or(false)
+    } else {
+        true
+    };
+    (
+        if healthy {
+            StatusCode::OK
+        } else {
+            StatusCode::SERVICE_UNAVAILABLE
+        },
+        Json(ReadyBody {
+            status: if healthy { "ready" } else { "unavailable" },
+            service: state.service.as_str(),
+            environment: state.environment.as_str(),
+            migrations_on_startup: false,
+        }),
+    )
 }

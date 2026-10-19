@@ -46,10 +46,12 @@ pub fn load_schema(name: &str) -> Result<Value, CatalogError> {
 }
 
 pub fn load_fato_comercial_v2() -> Result<Value, CatalogError> {
-    read_json(
-        &PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../contracts/v2/fato-comercial.schema.json"),
-    )
+    // A API usa este contrato em runtime; incluí-lo no binário evita depender
+    // do diretório de fontes dentro da imagem de produção.
+    serde_json::from_str(include_str!(
+        "../../../contracts/v2/fato-comercial.schema.json"
+    ))
+    .map_err(|error| CatalogError::Json(error.to_string()))
 }
 
 pub fn assert_envelope(schema: &Value) -> Result<(), CatalogError> {

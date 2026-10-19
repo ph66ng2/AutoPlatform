@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, sync::Arc};
 
 use axum::{middleware::from_fn, Router};
 use thiserror::Error;
@@ -31,6 +31,15 @@ pub async fn serve_with(
     modules: &'static [&'static str],
     extra: Router,
 ) -> Result<(), ServeError> {
+    serve_with_readiness(config, modules, extra, None).await
+}
+
+pub async fn serve_with_readiness(
+    config: AppConfig,
+    modules: &'static [&'static str],
+    extra: Router,
+    readiness: Option<Arc<dyn Fn() -> bool + Send + Sync>>,
+) -> Result<(), ServeError> {
     init_tracing();
     log_startup(&config, modules);
     let listener = TcpListener::bind(config.http_bind)
@@ -39,11 +48,13 @@ pub async fn serve_with(
             bind: config.http_bind,
             source,
         })?;
+    let mut state = AppState::from_config(&config);
+    if let Some(probe) = readiness {
+        state = state.with_readiness(probe);
+    }
     axum::serve(
         listener,
-        router(AppState::from_config(&config))
-            .merge(extra)
-            .layer(from_fn(propagate_context)),
+        router(state).merge(extra).layer(from_fn(propagate_context)),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await
@@ -173,6 +184,41 @@ mod tests {
             assert!(!health.1.contains("super-secret-token"));
             assert!(!ready.1.contains("super-secret-token"));
         }
+    }
+
+    #[tokio::test]
+    async fn readiness_fails_closed_when_dependency_is_unavailable() {
+        use std::sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        };
+
+        let config = load_from(ServiceKind::Api, |_| Ok(None)).expect("config");
+        let healthy = Arc::new(AtomicBool::new(false));
+        let probe = {
+            let healthy = Arc::clone(&healthy);
+            Arc::new(move || healthy.load(Ordering::SeqCst))
+        };
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("addr");
+        let (shutdown, stop) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(serve_listener(
+            listener,
+            AppState::from_config(&config).with_readiness(probe),
+            async move {
+                stop.await.ok();
+            },
+        ));
+        assert_eq!(http_get(addr, "/health").await.0, 200);
+        let unavailable = http_get(addr, "/ready").await;
+        assert_eq!(unavailable.0, 503);
+        assert!(unavailable.1.contains("unavailable"));
+        healthy.store(true, Ordering::SeqCst);
+        assert_eq!(http_get(addr, "/ready").await.0, 200);
+        let _ = shutdown.send(());
+        server.await.expect("task").expect("server");
     }
 
     #[tokio::test]
