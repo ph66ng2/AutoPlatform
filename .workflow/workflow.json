@@ -468,7 +468,7 @@
     {
       "id": "AP-INTEGRATION-001",
       "title": "Ingerir FatoComercial v2 do AutoOS",
-      "status": "ready",
+      "status": "merged",
       "blockedBy": [
         "AP-CONTRACT-002",
         "AP-ID-001",
