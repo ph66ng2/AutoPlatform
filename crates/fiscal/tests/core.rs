@@ -92,6 +92,21 @@ impl FiscalProvider for FakeProvider {
         ProviderOutcome::Cancelled
     }
 }
+struct FixedProvider {
+    consultation: ProviderOutcome,
+    cancellation: ProviderOutcome,
+}
+impl FiscalProvider for FixedProvider {
+    fn issue(&self, _: &ProviderRequest) -> ProviderOutcome {
+        ProviderOutcome::Indeterminate
+    }
+    fn cancel(&self, _: &ProviderRequest) -> ProviderOutcome {
+        self.cancellation.clone()
+    }
+    fn consult(&self, _: &ProviderRequest) -> ProviderOutcome {
+        self.consultation.clone()
+    }
+}
 impl DecisionResolver for Resolver {
     fn approved_decision(
         &self,
@@ -218,6 +233,37 @@ fn tenant_isolation_concurrent_prepare_and_state_machine() {
       INSERT INTO fiscal.issuer_profiles(company_id,id,establishment_id,label) VALUES
       ('00000000-0000-4000-8000-0000000000a1','00000000-0000-4000-8000-0000000000c1','00000000-0000-4000-8000-0000000000b1','a'),
       ('00000000-0000-4000-8000-0000000000d1','00000000-0000-4000-8000-0000000000d4','00000000-0000-4000-8000-0000000000d5','b');").expect("seed");
+    // Um envio iniciado na versão anterior precisa continuar consultável após a migration aditiva.
+    let old_fact = fixture("servico.json").to_string();
+    let old_id = id("00000000-0000-4000-8000-0000000000c4");
+    client.execute("INSERT INTO fiscal.fact_snapshots(company_id,fact_id,os_id,os_version,origin,payload_hash,payload) VALUES($1,$2,$3,1,'autoos',$4,($5::text)::jsonb)",
+        &[&company(), &id("00000000-0000-4000-8000-0000000000c2"), &id("00000000-0000-4000-8000-0000000000c3"), &"a".repeat(64), &old_fact]).expect("old fact");
+    client.execute("INSERT INTO fiscal.documents(company_id,id,fact_id,profile_id,plan_key,plan_hash,decision_version,scenario,kind,fiscal_code,amount_cents,tax_base_cents) VALUES($1,$2,$3,$4,'old-plan',$5,1,'os-maintenance','nfse','14.02',15000,15000)",
+        &[&company(), &old_id, &id("00000000-0000-4000-8000-0000000000c2"), &profile(), &"b".repeat(64)]).expect("old document");
+    client
+        .execute(
+            "UPDATE fiscal.documents SET state='sending' WHERE company_id=$1 AND id=$2",
+            &[&company(), &old_id],
+        )
+        .expect("old in flight");
+    client.execute("INSERT INTO fiscal.document_events(company_id,id,document_id,actor_id,kind) VALUES($1,$2,$3,$4,'issue_confirmed')",
+        &[&company(), &Uuid::new_v4(), &old_id, &account()]).expect("old event");
+    let sql = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../migrations/0005_fiscal_operation_recovery.sql"),
+    )
+    .expect("migration 0005");
+    client.batch_execute(&sql).expect("additive migration");
+    let recovered = FixedProvider {
+        consultation: ProviderOutcome::Authorized {
+            xml: b"<xml>old</xml>".to_vec(),
+        },
+        cancellation: ProviderOutcome::Cancelled,
+    };
+    assert_eq!(
+        consult(&mut client, session(), old_id, &recovered).expect("old in-flight recovery"),
+        DocumentState::Authorized
+    );
     let fact = fixture("mista-preco-unico.json");
     let resolver = Resolver(Some(decision(&fact, DocumentKind::Nfse, "14.02")));
     let barrier = Arc::new(Barrier::new(2));
@@ -351,6 +397,93 @@ fn tenant_isolation_concurrent_prepare_and_state_machine() {
             &provider
         )
         .expect("cancelled"),
+        DocumentState::Cancelled
+    );
+    let second_fact = fixture("servico.json");
+    let second = prepare(
+        &mut client,
+        session(),
+        profile(),
+        &second_fact,
+        "os-maintenance",
+        2,
+        &Resolver(Some(decision(&second_fact, DocumentKind::Nfse, "14.02"))),
+    )
+    .expect("second fact");
+    let second_id = second[0].id;
+    // Simula término do processo depois de persistir a intenção, antes de salvar a resposta.
+    transition(
+        &mut client,
+        session(),
+        second_id,
+        DocumentState::Prepared,
+        DocumentState::Sending,
+        Some(HumanConfirmation {
+            actor_id: account(),
+        }),
+        None,
+    )
+    .expect("in flight issue");
+    let authorized = FixedProvider {
+        consultation: ProviderOutcome::Authorized {
+            xml: b"<xml>recovered</xml>".to_vec(),
+        },
+        cancellation: ProviderOutcome::Indeterminate,
+    };
+    assert_eq!(
+        consult(&mut client, session(), second_id, &authorized).expect("recover issue"),
+        DocumentState::Authorized
+    );
+    assert_eq!(
+        cancel(
+            &mut client,
+            session(),
+            second_id,
+            HumanConfirmation {
+                actor_id: account()
+            },
+            &authorized
+        )
+        .expect("cancel timeout"),
+        DocumentState::Indeterminate
+    );
+    let rejected_cancel = FixedProvider {
+        consultation: ProviderOutcome::Rejected,
+        cancellation: ProviderOutcome::Cancelled,
+    };
+    assert_eq!(
+        consult(&mut client, session(), second_id, &rejected_cancel)
+            .expect("rejected cancellation"),
+        DocumentState::Authorized
+    );
+    transition(
+        &mut client,
+        session(),
+        second_id,
+        DocumentState::Authorized,
+        DocumentState::CancelPending,
+        Some(HumanConfirmation {
+            actor_id: account(),
+        }),
+        None,
+    )
+    .expect("in flight cancel");
+    assert_eq!(
+        consult(&mut client, session(), second_id, &rejected_cancel)
+            .expect("recover pending cancel"),
+        DocumentState::Authorized
+    );
+    assert_eq!(
+        cancel(
+            &mut client,
+            session(),
+            second_id,
+            HumanConfirmation {
+                actor_id: account()
+            },
+            &rejected_cancel
+        )
+        .expect("retry confirmed cancellation"),
         DocumentState::Cancelled
     );
     drop(client);

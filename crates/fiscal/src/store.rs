@@ -121,9 +121,6 @@ pub fn transition(
     if needs_human && confirmation.map(|c| c.actor_id) != Some(session.account_id) {
         return Err(FiscalError::Denied);
     }
-    if next == DocumentState::Authorized && xml.is_none_or(<[u8]>::is_empty) {
-        return Err(FiscalError::XmlRequired);
-    }
     let mut tx = client.transaction().map_err(|_| FiscalError::Database)?;
     tx.execute("SET LOCAL ROLE fiscal_app", &[])
         .map_err(|_| FiscalError::Database)?;
@@ -137,7 +134,7 @@ pub fn transition(
     .map_err(|_| FiscalError::Database)?;
     let row = tx
         .query_opt(
-            "SELECT state FROM fiscal.documents WHERE company_id=$1 AND id=$2 FOR UPDATE",
+            "SELECT d.state,COALESCE(d.operation,(SELECT CASE e.kind WHEN 'issue_confirmed' THEN 'issue' ELSE 'cancel' END FROM fiscal.document_events e WHERE e.company_id=d.company_id AND e.document_id=d.id AND e.kind IN ('issue_confirmed','cancel_confirmed') ORDER BY e.occurred_at DESC,e.id DESC LIMIT 1)) FROM fiscal.documents d WHERE d.company_id=$1 AND d.id=$2 FOR UPDATE",
             &[&session.company_id, &document_id],
         )
         .map_err(|_| FiscalError::Database)?
@@ -145,15 +142,44 @@ pub fn transition(
     if row.get::<_, &str>(0) != expected.as_str() {
         return Err(FiscalError::Conflict);
     }
+    let old_operation: &str = row.get(1);
+    if (expected == DocumentState::Indeterminate
+        && old_operation == "issue"
+        && next == DocumentState::Cancelled)
+        || (expected == DocumentState::Indeterminate
+            && old_operation == "cancel"
+            && next == DocumentState::Rejected)
+    {
+        return Err(FiscalError::InvalidTransition);
+    }
+    let existing_xml_allowed = expected == DocumentState::CancelPending
+        || (expected == DocumentState::Indeterminate && old_operation == "cancel");
+    if next == DocumentState::Authorized
+        && xml.is_none_or(<[u8]>::is_empty)
+        && !existing_xml_allowed
+    {
+        return Err(FiscalError::XmlRequired);
+    }
     if let Some(bytes) = xml {
         if next == DocumentState::Authorized {
             tx.execute("INSERT INTO fiscal.document_artifacts(company_id,document_id,kind,content) VALUES($1,$2,'xml',$3) ON CONFLICT DO NOTHING", &[&session.company_id, &document_id, &bytes])
                 .map_err(|_| FiscalError::Database)?;
         }
     }
+    let new_operation = match next {
+        DocumentState::Sending => "issue",
+        DocumentState::CancelPending => "cancel",
+        DocumentState::Indeterminate => old_operation,
+        _ => "none",
+    };
     tx.execute(
-        "UPDATE fiscal.documents SET state=$3 WHERE company_id=$1 AND id=$2",
-        &[&session.company_id, &document_id, &next.as_str()],
+        "UPDATE fiscal.documents SET state=$3,operation=$4 WHERE company_id=$1 AND id=$2",
+        &[
+            &session.company_id,
+            &document_id,
+            &next.as_str(),
+            &new_operation,
+        ],
     )
     .map_err(|_| FiscalError::Database)?;
     let event = match next {
