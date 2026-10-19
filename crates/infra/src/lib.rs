@@ -9,4 +9,5 @@ mod serve;
 mod telemetry;
 
 pub use config::{load, AppConfig, ConfigError, Environment, ServiceKind};
-pub use serve::serve;
+pub use serve::{serve, serve_with, serve_with_readiness};
+pub use telemetry::record_verified_tenant;

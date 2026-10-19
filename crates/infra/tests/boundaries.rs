@@ -94,6 +94,7 @@ fn allowed_internal<'a>(package: &str, domains: &'a [String]) -> Vec<&'a str> {
         "ap-infra" => vec!["ap-kernel", "ap-observability"],
         "ap-audit" => vec!["ap-kernel", "ap-observability"],
         "ap-fiscal" => vec!["ap-kernel", "ap-contracts", "ap-identity"],
+        "ap-integration" => vec!["ap-kernel", "ap-contracts", "ap-identity"],
         "ap-api" | "ap-worker" => {
             let mut allowed = vec!["ap-kernel", "ap-infra"];
             allowed.extend(domains.iter().map(String::as_str));

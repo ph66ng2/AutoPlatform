@@ -29,7 +29,12 @@ dependencies = [
  "ap-portal",
  "ap-receivables",
  "ap-sales",
+ "axum",
+ "postgres",
+ "serde",
+ "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -132,7 +137,13 @@ dependencies = [
 name = "ap-integration"
 version = "0.1.0"
 dependencies = [
+ "ap-contracts",
+ "ap-identity",
  "ap-kernel",
+ "postgres",
+ "serde_json",
+ "sha2 0.10.9",
+ "uuid",
 ]
 
 [[package]]

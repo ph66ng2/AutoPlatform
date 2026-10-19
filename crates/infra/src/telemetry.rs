@@ -16,16 +16,20 @@ pub async fn propagate_context(request: Request, next: Next) -> Response {
             .get(HEADER_CORRELATION_ID)
             .and_then(|value| value.to_str().ok()),
     );
-    let tenant = TenantPseudonym::from_raw(
+    let path = redact(request.uri().path());
+    // A rota de fatos registra o tenant apenas depois da autorização no banco.
+    let tenant_key = if request.uri().path().starts_with("/v2/commercial-facts") {
+        ""
+    } else {
         request
             .headers()
             .get(HEADER_TENANT_KEY)
             .and_then(|value| value.to_str().ok())
-            .unwrap_or(""),
-    );
+            .unwrap_or("")
+    };
+    let tenant = TenantPseudonym::from_raw(tenant_key);
     let event_id = EventId::generate();
     let method = request.method().to_string();
-    let path = redact(request.uri().path());
     let span = tracing::info_span!(
         "http_request",
         correlation_id = %correlation_id,
@@ -55,6 +59,13 @@ pub async fn propagate_context(request: Request, next: Next) -> Response {
     }
     .instrument(span)
     .await
+}
+
+/// Deve ser chamado apenas após a membership do tenant ter sido confirmada.
+pub fn record_verified_tenant(company_id: &str) {
+    let pseudonym = TenantPseudonym::from_raw(company_id);
+    tracing::Span::current().record("tenant", tracing::field::display(pseudonym.as_str()));
+    tracing::info!("empresa autorizada");
 }
 
 fn insert_header(headers: &mut axum::http::HeaderMap, name: &'static str, value: &str) {
