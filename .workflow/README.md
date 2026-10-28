@@ -16,9 +16,9 @@ Um ticket somente está liberado quando tem status `ready` e todos os itens de `
 ## Marcos
 
 1. Fundação e identidade já entregues; reconciliar `AP-INV-001` com o PR #9 sem presumir aceite automático.
-2. `AP-CONTRACT-002` e matriz contábil `AP-FISC-ACCOUNTING-EXT-001`; contrato pode avançar enquanto a matriz é obtida.
+2. `AP-CONTRACT-002`; em paralelo, aprovação fiscal da BMITAG `AP-FISC-ACCOUNTING-EXT-001` e transição manual `AP-FISC-BMITAG-TRANSITION-EXT-001`. A aprovação condiciona a ativação da BMITAG, não a construção do produto.
 3. Em paralelo: `AP-INTEGRATION-001` ingere o fato do AutoOS e `AP-FISC-CORE-001` cria núcleo desacoplado de Sale/estoque central.
-4. Configuração fiscal; NFS-e e NF-e em adapters separados; gate backend de homologação.
+4. Configuração fiscal com decisões sintéticas; NFS-e padrão nacional e NF-e 55 em adapters separados; decisão de NFC-e; gate backend de homologação.
 5. Gate integrado AutoOS e piloto controlado `AP-FISC-PROD-001` com aprovação humana.
 6. Financeiro v1; depois SaaS, pagamentos, Portal, offline e migração conforme nova decisão.
 
@@ -28,7 +28,8 @@ Os planejadores ainda não consomem `externalPrerequisites`; não trate esses ca
 
 ## Tickets externos
 
-- `AP-FISC-ACCOUNTING-EXT-001`: matriz fiscal validada pela contabilidade.
+- `AP-FISC-ACCOUNTING-EXT-001`: configuração fiscal da BMITAG aprovada pela contabilidade.
+- `AP-FISC-BMITAG-TRANSITION-EXT-001`: emissão manual da BMITAG pelo Emissor Nacional até a ativação.
 - `AP-CLIENTS-PORTAL-EXT-001`: AutoOS e AutoBO consumindo o Portal em staging.
 - `AP-PRODUCT-SYNC-EXT-001`: gates de Produto em Sincronia homologados nos dois desktops.
 
