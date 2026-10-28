@@ -6,22 +6,37 @@ Este documento orienta a **prioridade**. Os três `.workflow/workflow.json` cont
 
 **Revisão coordenada:** [AutoOs #102](https://github.com/ph66ng2/AutoOs/pull/102) · [AutoPlatform #10](https://github.com/ph66ng2/AutoPlatform/pull/10) · [AutoBO #9](https://github.com/ph66ng2/AutoBO/pull/9). Os três PRs estão em rascunho e nenhum deles implementa o fluxo fiscal.
 
-## Primeiro movimento: quatro frentes em paralelo
+## Primeiro movimento: cinco frentes em paralelo
 
 | Frente | Ticket | Entrega de aceite |
 |---|---|---|
 | Governança | `AO-WF-RECONCILE-001` | Revisar os três PRs de roadmap e registrar itens ativos, adiados e substituídos. |
 | Ownership | `AO-SUITE-001` | AutoOS é autoridade de cliente, produto, serviço e estoque; equipamento e OS pertencem à operação. |
 | Contrato | `AP-CONTRACT-002` | FatoComercial v2 versionado, imutável após ingestão, validado com OS de serviço, produto e mista; v1 compatível. |
-| Condição externa | `AP-FISC-ACCOUNTING-EXT-001` | `ready` para preparar a matriz BMITAG; aceite exige decisões contábeis completas por cenário. A orientação da OS 63 cobre peças do cliente e NFS-e única nesse caso. |
+| Aprovação BMITAG | `AP-FISC-ACCOUNTING-EXT-001` | `ready` para preparar as combinações da BMITAG; aceite exige decisão contábil escrita por combinação praticada, incluindo a conciliação 14.01/14.02 da OS 63. Condiciona a ativação da BMITAG, não a construção do produto. |
+| Transição operacional | `AP-FISC-BMITAG-TRANSITION-EXT-001` | BMITAG emite NFS-e manualmente pelo Emissor Nacional, se alcançada pela obrigação de 1º de novembro de 2026, até a ativação no AutoOS. Não depende de código. |
+
+## Produto multiempresa e recorte de lançamento
+
+O enquadramento fiscal é decisão de cada cliente e de seu contador. O produto executa, valida e audita; não decide regra tributária nem atesta que o enquadramento está juridicamente correto.
+
+**Modelo de decisão:** o cadastro sugere (serviço: código de tributação nacional/LC 116, código municipal e NBS; mercadoria: NCM, origem e unidade) → o tipo de operação seleciona (natureza, CFOP, consumidor final, modelo do documento) → os dados da OS e do estabelecimento completam (CRT/regime, que define CST ou CSOSN; município; trabalho efetivamente realizado; valores) → só uma combinação aprovada e vigente autoriza preparar a nota. O contador aprova no onboarding as poucas combinações que o cliente usa; combinação nova vai para revisão, sem exigir que toda possibilidade seja prevista na entrada.
+
+**Recorte de lançamento:** estabelecimentos em Salvador/BA optantes do Simples Nacional como ME/EPP, com NFS-e no padrão nacional, obrigatório para esse grupo a partir de 1º de novembro de 2026. Fora do recorte, o estabelecimento fica não suportado até confirmar seu caminho de emissão. NFC-e modelo 65 depende de `AP-FISC-NFCE-ADR-001`.
+
+**Peças:** em OS nova, peça fornecida pela oficina sai em linha própria com valor fiscal; peça do cliente e material consumido são distinguidos. O contrato v2 continua aceitando `bundle`; bundle com peça da oficina sem valor fiscal não prepara documento.
+
+**Simplificações:** substituição de NFS-e fica adiada; NFS-e e NF-e são documentos independentes ligados à mesma OS, com sucesso parcial visível. A numeração da DPS (série e número, responsabilidade do emitente) continua controlada ou obtida do provider com segurança.
+
+**Antes de vender a outros clientes:** termos de uso atribuem ao cliente e a seu contador a escolha e revisão do enquadramento, com revisão jurídica. Isso não dispensa o produto de executar fielmente a configuração, impedir regra vencida, proteger credenciais e mostrar falhas. Cada cliente repete seu próprio aceite, sem alterar código.
 
 `AP-INV-001` possui [PR #9 mergeado](https://github.com/ph66ng2/AutoPlatform/pull/9) e ainda aparece `in_progress` no catálogo. Conciliar evidência e aceite antes de mudar o status. Estoque central e `AP-SALE-001` não bloqueiam o núcleo Fiscal.
 
 ## Fluxo até o piloto
 
 1. **Fato e ingestão:** `AO-SUITE-002` produz o snapshot de OS no v2 após ownership e contrato aprovados. `AP-INTEGRATION-001` ingere e persiste por empresa, OS e versão, com resposta idempotente. `AP-FISC-CORE-001` aceita o fato sem exigir Sale ou estoque central. Produtor, ingestão e núcleo podem ser construídos em paralelo sobre exemplos versionados; a integração real exige os três compatíveis.
-2. **Emissão e UI em paralelo:** `AP-FISC-CONFIG-001` exige núcleo e matriz contábil. `AP-FISC-NFSE-001` e `AP-FISC-NFE-001` continuam adapters separados. No AutoOS, `AO-FISC-001` cria a fila, `AO-FISC-002` a revisão, `AO-FISC-003` a API e `AO-FISC-004/005/006` cobrem estados, documentos e histórico. A UI pode avançar com fake contratual enquanto adapters são homologados.
-3. **Gates separados:** `AP-FISC-GATE-001` prova o backend em homologação. `AO-FISC-GATE-001` prova orçamento → OS → fato → revisão → emissão → retorno → documento → histórico. Nenhum gate executa piloto real. `AP-FISC-PROD-001` permanece `blocked` até os dois gates, matriz contábil, autorização humana e condições reais do piloto.
+2. **Emissão e UI em paralelo:** `AP-FISC-CONFIG-001` exige só o núcleo e é construído com decisões sintéticas. `AP-FISC-NFSE-001` (padrão nacional) e `AP-FISC-NFE-001` (modelo 55) continuam adapters separados, homologados com decisões sintéticas. No AutoOS, `AO-FISC-001` cria a fila, `AO-FISC-002` a revisão, `AO-FISC-003` a API e `AO-FISC-004/005/006` cobrem estados, documentos e histórico. A UI pode avançar com fake contratual enquanto adapters são homologados.
+3. **Gates separados:** `AP-FISC-GATE-001` prova o backend em homologação. `AO-FISC-GATE-001` prova orçamento → OS → fato → revisão → emissão → retorno → documento → histórico. Nenhum gate executa piloto real. `AP-FISC-PROD-001` permanece `blocked` até os dois gates, a aprovação da BMITAG (`AP-FISC-ACCOUNTING-EXT-001`), autorização humana e condições reais do piloto.
 
 `blockedBy` só contém IDs do próprio repositório. `externalPrerequisites` nos novos tickets torna a condição externa visível, com estado `proposed`, mas os scripts não a aplicam. Para reger elegibilidade automática, aprovar um contrato versionado de arestas cruzadas e atualizar os planejadores primeiro. Até lá, os gates externos permanecem `blocked` até confirmação humana.
 

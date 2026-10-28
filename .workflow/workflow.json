@@ -5,12 +5,14 @@
     "role": "Contrato v2, ingestão e backend fiscal",
     "focusIds": [
       "AP-FISC-ACCOUNTING-EXT-001",
+      "AP-FISC-BMITAG-TRANSITION-EXT-001",
       "AP-CONTRACT-002",
       "AP-INTEGRATION-001",
       "AP-FISC-CORE-001",
       "AP-FISC-CONFIG-001",
       "AP-FISC-NFSE-001",
       "AP-FISC-NFE-001",
+      "AP-FISC-NFCE-ADR-001",
       "AP-FISC-GATE-001",
       "AP-FISC-PROD-001"
     ],
@@ -37,7 +39,7 @@
       "AP-INTEGRATION-GATE-001",
       "AP-PRODUCT-SYNC-EXT-001"
     ],
-    "note": "AP-INV-001 continua in_progress até aceitação humana do PR #9; não bloqueia o núcleo fiscal. Prioridade não altera status."
+    "note": "AP-INV-001 continua in_progress até aceitação humana do PR #9; não bloqueia o núcleo fiscal. Prioridade não altera status. A aprovação fiscal da BMITAG condiciona sua ativação (AP-FISC-PROD-001), não a construção da configuração, dos adapters e do gate técnico."
   },
   "baseBranch": "origin/main",
   "architectureDecisions": [
@@ -46,7 +48,9 @@
     "Schemas platform, autoos, autobo, inventory, sales, payments, fiscal, integration, portal e audit têm migrations com fonte única neste repositório.",
     "Outbox transacional, inbox idempotente e contratos versionados são obrigatórios entre domínios.",
     "Segredos privilegiados permanecem server-side e tokens de provider usam envelope encryption.",
-    "Produção não aplica migrations automaticamente no startup."
+    "Produção não aplica migrations automaticamente no startup.",
+    "Enquadramento fiscal é configuração aprovada por cliente e contador; o produto executa, valida e audita, sem decidir regra tributária.",
+    "Recorte de lançamento: estabelecimentos em Salvador/BA optantes do Simples Nacional como ME/EPP, com NFS-e no padrão nacional. Estabelecimentos fora desse recorte ficam não suportados até decisão própria."
   ],
   "tickets": [
     {
@@ -232,17 +236,113 @@
       "risks": ["Uma máquina de estados ambígua.", "Perder snapshot histórico."]
     },
     {
-      "id": "AP-FISC-ACCOUNTING-EXT-001", "title": "Receber matriz fiscal validada pela contabilidade", "status": "ready", "blockedBy": [],
-      "context": "Município, regime, CNAEs, CFOPs, NCMs, CST/CSOSN e retenções precisam de validação BMITAG. A inspeção de leitura do Gerencie Aqui em 2026-10-08 encontrou OS com totais separados, NF-e em produção e cadastro de manutenção com peça marcado como Produto e NCM provisório; não encontrou NFS-e nos períodos consultados nem comprovou vínculo OS-documento. O responsável informou em 2026-10-14 que todas as OS de serviço do piloto cobram apenas mão de obra e, quando há troca, usam peças do cliente; confirmou também que a orientação escrita de NFS-e única para a OS 63 veio da contabilidade. Em 2026-10-15 escolheu 14.02 como referência operacional após conferir uma NFS-e anterior. Em 2026-10-18 apresentou texto contábil de 14.02 para diagnóstico e orientação, sem conserto/manutenção ou fornecimento de peças; depois afirmou que a contabilidade também confirmou 14.02 para a OS 63, descrita antes como manutenção/reparo com peças do cliente. A orientação escrita anterior para essa OS citou 14.01 em princípio. Falta fundamento atualizado que concilie esses fatos e códigos, além dos demais campos da matriz, antes da emissão. Evidências e lacunas em docs/fiscal/AP-FISC-ACCOUNTING-EXT-001-gerencie-aqui.md.",
-      "objective": "Registrar decisões contábeis que condicionam configuração e providers fiscais.",
-      "scope": ["Receber matriz assinada/revisada.", "Mapear cenários distintos de serviço sem peça, OS com peça do cliente e cobrança apenas de mão de obra, OS com serviço e peça da BMITAG cobrados em linhas separadas, OS com peça da BMITAG incluída em preço único e venda de mercadoria fora da OS; distinguir peças/partes fornecidas de materiais consumidos e indicar enquadramento, base de cálculo e documentos exigidos em cada caso."],
-      "outOfScope": ["Inventar regra tributária.", "Emitir documento."],
-      "expectedBehavior": "Ticket pode avançar na preparação da matriz piloto com o relato operacional e os documentos já recebidos. O aceite e o status merged exigem confirmação escrita da contabilidade para cada cenário praticado, incluindo o código de serviço aplicável; configuração e emissão permanecem bloqueadas enquanto faltar decisão aprovada e vigente.",
-      "acceptanceCriteria": ["Matriz cobre cenários piloto e certificados; cenário não praticado pela BMITAG fica marcado como não aplicável ao piloto com confirmação contábil, sem exigir criação de OS real.", "Exemplos redigidos vinculam OS, documentos emitidos e decisão escrita do contador para serviço sem peça, manutenção com peça do cliente/mão de obra, manutenção com peça da BMITAG/preço único, manutenção com peça da BMITAG cobrada separadamente e venda de mercadoria fora da OS, quando praticados.", "Para manutenção com peças, a contabilidade enfrenta expressamente a ressalva do subitem 14.01 da LC 116/2003, inclusive no preço único; se houver ISS e ICMS, define critério documental e de valoração sem inventar rateio.", "Lacunas e limitações estão explícitas."],
-      "tests": ["Walkthrough com exemplos sintéticos.", "Revisão cruzada com .workflow/FISCAL_PROD_ROADMAP.md e tickets fiscais dependentes."],
-      "testInstructions": {"prerequisites":["Relato operacional, exemplos e orientação escrita da contabilidade para a OS 63 já recebidos; vínculos redigidos entre OS e nota(s) e decisões restantes são necessários para o aceite."],"steps":["Revisar cenários e lacunas de docs/fiscal/AP-FISC-ACCOUNTING-EXT-001-gerencie-aqui.md.","Registrar aceite humano e vigência da decisão."],"expectedResultAndEvidence":["Matriz versionada sem dados pessoais desnecessários, com referência redigida a OS/documentos e fundamento contábil."],"dataImpact":"Nenhum.","cleanupAndRollback":["Reabrir se a premissa contábil mudar."],"stagingRestrictions":"Não usar documento fiscal real."},
-      "likelyFiles": ["docs/fiscal/", ".workflow/workflow.json"],
-      "risks": ["Começar provider sem matriz.", "Tomar tipo de item, NCM provisório ou configuração legado como validação contábil.", "Extrapolar BMITAG para todo Brasil."]
+      "id": "AP-FISC-ACCOUNTING-EXT-001",
+      "title": "Aprovar configuração fiscal da BMITAG",
+      "status": "ready",
+      "blockedBy": [],
+      "context": "A BMITAG é o primeiro cliente. Sua aprovação contábil condiciona a ativação real da BMITAG (AP-FISC-PROD-001), não a construção do produto: configuração, adapters e gate técnico usam decisões sintéticas. Município, regime, CNAEs, CFOPs, NCMs, CST/CSOSN e retenções precisam de validação BMITAG. A inspeção de leitura do Gerencie Aqui em 2026-10-08 encontrou OS com totais separados, NF-e em produção e cadastro de manutenção com peça marcado como Produto e NCM provisório; não encontrou NFS-e nos períodos consultados nem comprovou vínculo OS-documento. O responsável informou em 2026-10-14 que todas as OS de serviço do piloto cobram apenas mão de obra e, quando há troca, usam peças do cliente; confirmou também que a orientação escrita de NFS-e única para a OS 63 veio da contabilidade. Em 2026-10-15 escolheu 14.02 como referência operacional após conferir uma NFS-e anterior. Em 2026-10-18 apresentou texto contábil de 14.02 para diagnóstico e orientação, sem conserto/manutenção ou fornecimento de peças; depois afirmou que a contabilidade também confirmou 14.02 para a OS 63, descrita antes como manutenção/reparo com peças do cliente. A orientação escrita anterior para essa OS citou 14.01 em princípio. Falta fundamento atualizado que concilie esses fatos e códigos, além dos demais campos da matriz, antes da emissão. Evidências e lacunas em docs/fiscal/AP-FISC-ACCOUNTING-EXT-001-gerencie-aqui.md.",
+      "objective": "Aprovar, no modelo de combinações de AP-FISC-CONFIG-001, as decisões contábeis da BMITAG para os cenários praticados.",
+      "scope": [
+        "Receber matriz assinada/revisada.",
+        "Mapear cenários distintos de serviço sem peça, OS com peça do cliente e cobrança apenas de mão de obra, OS com serviço e peça da BMITAG cobrados em linhas separadas, OS com peça da BMITAG incluída em preço único e venda de mercadoria fora da OS; distinguir peças/partes fornecidas de materiais consumidos e indicar enquadramento, base de cálculo e documentos exigidos em cada caso.",
+        "Confirmar CRT/regime e enquadramento como ME/EPP do Simples Nacional, que define CSOSN ou CST e o recorte de lançamento.",
+        "Registrar cada combinação usada pela BMITAG (estabelecimento, tipo de operação, código/item, regime) com responsável, fundamento e vigência.",
+        "Indicar, para as vendas de mercadoria praticadas, se cabe NF-e modelo 55 ou NFC-e modelo 65."
+      ],
+      "outOfScope": [
+        "Inventar regra tributária.",
+        "Emitir documento."
+      ],
+      "expectedBehavior": "Ticket avança na preparação das combinações da BMITAG com o relato operacional e os documentos já recebidos. O aceite e o status merged exigem confirmação escrita da contabilidade para cada combinação praticada, incluindo o código de serviço compatível com o trabalho efetivamente realizado. Sem esse aceite, a BMITAG não é ativada; o desenvolvimento do produto não fica bloqueado.",
+      "acceptanceCriteria": [
+        "Combinações da BMITAG cobrem os cenários praticados; cenário não praticado fica marcado como não aplicável com confirmação contábil, sem exigir criação de OS real.",
+        "Exemplos redigidos vinculam OS, documentos emitidos e decisão escrita do contador para serviço sem peça, manutenção com peça do cliente/mão de obra, manutenção com peça da BMITAG/preço único, manutenção com peça da BMITAG cobrada separadamente e venda de mercadoria fora da OS, quando praticados.",
+        "Para manutenção com peças, a contabilidade enfrenta expressamente a ressalva do subitem 14.01 da LC 116/2003, inclusive no preço único; se houver ISS e ICMS, define critério documental e de valoração sem inventar rateio.",
+        "OS 63: fundamento contábil atualizado concilia a descrição de manutenção/reparo com peças do cliente e a mudança de 14.01 \"em princípio\" para 14.02, ou a descrição da OS é corrigida com evidência.",
+        "CRT/regime, município, retenções, base e vigência estão registrados por estabelecimento.",
+        "Lacunas e limitações estão explícitas."
+      ],
+      "tests": [
+        "Walkthrough das combinações com exemplos sintéticos no modelo de AP-FISC-CONFIG-001.",
+        "Revisão cruzada com .workflow/FISCAL_PROD_ROADMAP.md e tickets fiscais dependentes."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Relato operacional, exemplos e orientação escrita da contabilidade para a OS 63 já recebidos; vínculos redigidos entre OS e nota(s) e decisões restantes são necessários para o aceite."
+        ],
+        "steps": [
+          "Revisar cenários e lacunas de docs/fiscal/AP-FISC-ACCOUNTING-EXT-001-gerencie-aqui.md.",
+          "Registrar aceite humano e vigência da decisão."
+        ],
+        "expectedResultAndEvidence": [
+          "Matriz versionada sem dados pessoais desnecessários, com referência redigida a OS/documentos e fundamento contábil."
+        ],
+        "dataImpact": "Nenhum.",
+        "cleanupAndRollback": [
+          "Reabrir se a premissa contábil mudar."
+        ],
+        "stagingRestrictions": "Não usar documento fiscal real."
+      },
+      "likelyFiles": [
+        "docs/fiscal/",
+        ".workflow/workflow.json"
+      ],
+      "risks": [
+        "Começar provider sem matriz.",
+        "Tomar tipo de item, NCM provisório ou configuração legado como validação contábil.",
+        "Extrapolar BMITAG para todo Brasil.",
+        "Tratar a aprovação da BMITAG como regra do produto para outros clientes."
+      ]
+    },
+    {
+      "id": "AP-FISC-BMITAG-TRANSITION-EXT-001",
+      "title": "Organizar emissão manual da BMITAG no Emissor Nacional",
+      "status": "ready",
+      "blockedBy": [],
+      "context": "Segundo a Receita Federal, ME/EPP optantes do Simples usam o Emissor Nacional da NFS-e a partir de 1º de novembro de 2026. A BMITAG emitia NFS-e no portal Nota Salvador. A obrigação independe do produto e não espera o adapter.",
+      "objective": "Garantir que a BMITAG emita NFS-e de forma regular pelo portal nacional até AP-FISC-PROD-001 ativá-la no AutoOS.",
+      "scope": [
+        "Confirmar com contabilidade se a BMITAG está entre as ME/EPP do Simples alcançadas e a data de corte.",
+        "Confirmar acesso ao Emissor Nacional e o certificado ou credencial usados.",
+        "Definir quem emite manualmente e como a OS é referenciada na NFS-e até a integração."
+      ],
+      "outOfScope": [
+        "Implementar código.",
+        "Emitir pelo AutoOS ou AutoPlatform."
+      ],
+      "expectedBehavior": "Operação da BMITAG não depende do prazo de desenvolvimento; nenhuma emissão é feita por agente.",
+      "acceptanceCriteria": [
+        "Confirmação contábil do enquadramento e da data de corte registrada.",
+        "Acesso ao Emissor Nacional verificado por pessoa da BMITAG.",
+        "Procedimento manual escrito, incluindo referência à OS."
+      ],
+      "tests": [
+        "Revisão humana do procedimento."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Contabilidade e responsável da BMITAG disponíveis."
+        ],
+        "steps": [
+          "Confirmar enquadramento e acesso.",
+          "Registrar procedimento e responsável."
+        ],
+        "expectedResultAndEvidence": [
+          "Procedimento redigido em docs/fiscal/, sem credenciais nem dados de terceiros."
+        ],
+        "dataImpact": "Emissões reais ocorrem fora do sistema, por pessoa da BMITAG.",
+        "cleanupAndRollback": [
+          "Encerrar quando AP-FISC-PROD-001 ativar a BMITAG."
+        ],
+        "stagingRestrictions": "Nenhum agente emite documento real."
+      },
+      "likelyFiles": [
+        "docs/fiscal/"
+      ],
+      "risks": [
+        "BMITAG ficar sem emissão regular após a data de corte.",
+        "Notas manuais sem vínculo com a OS."
+      ]
     },
     {
       "id": "AP-FISC-CORE-001",
@@ -306,43 +406,237 @@
       ]
     },
     {
-      "id": "AP-FISC-CONFIG-001", "title": "Implementar configuração fiscal server-side", "status": "ready", "blockedBy": ["AP-FISC-CORE-001", "AP-FISC-ACCOUNTING-EXT-001"],
-      "context": "Certificados e credenciais fiscais não podem chegar ao desktop.",
-      "objective": "Criar configuração por empresa com validação, encryption e rotação segura.",
-      "scope": ["Implementar FiscalIssuerProfile e provider config criptografada.", "Persistir decisões fiscais versionadas por empresa/estabelecimento e cenário, com aprovação e vigência, conforme a entrada definida em AP-FISC-CORE-001.", "Validar matriz contábil antes de READY_FOR_REVIEW."],
-      "outOfScope": ["Escolher regra tributária automaticamente.", "Exibir segredo de volta."],
-      "expectedBehavior": "Serviço usa segredo descriptografado apenas em memória e registra auditoria sanitizada.",
-      "acceptanceCriteria": ["Master key fica fora do banco.", "Tenant A não referencia config de B.", "Decisão ausente, não aprovada ou fora da vigência bloqueia preparação; alterações não reclassificam documentos históricos."],
-      "tests": ["Encryption/rotação e negação tenant.", "Config incompleta bloqueia preparação.", "Decisões diferentes por empresa e cenário; preço fechado sem fundamentação ou valoração exigida bloqueia preparação; documentos correlacionados quando aprovados."],
-      "testInstructions": {"prerequisites":["Chaves exclusivas de staging."],"steps":["Cadastrar/rotacionar config sintética.","Tentar leitura e uso cruzado."],"expectedResultAndEvidence":["Segredo nunca retorna ou aparece em log."],"dataImpact":"Somente configs de teste.","cleanupAndRollback":["Revogar e remover secrets de staging."],"stagingRestrictions":"Sem certificado real."},
-      "likelyFiles": ["crates/fiscal/", "crates/secrets/", "migrations/"],
-      "risks": ["Master key no banco.", "Segredo em log/erro."]
+      "id": "AP-FISC-CONFIG-001",
+      "title": "Implementar configuração fiscal server-side",
+      "status": "ready",
+      "blockedBy": [
+        "AP-FISC-CORE-001"
+      ],
+      "context": "Produto multiempresa: o enquadramento fiscal é decisão do cliente e de seu contador; o sistema executa, valida e audita, sem decidir regra tributária. Certificados e credenciais fiscais não chegam ao desktop. Modelo de decisão: o cadastro sugere (serviço: código de tributação nacional/LC 116, código municipal e NBS; mercadoria: NCM, origem e unidade) → o tipo de operação seleciona (natureza, CFOP, consumidor final, modelo do documento) → os dados da OS e do estabelecimento completam (CRT/regime, que define CST ou CSOSN; município; inscrições; trabalho efetivamente realizado; valores) → só uma combinação aprovada e vigente autoriza preparar a nota. Recorte de lançamento: estabelecimentos em Salvador/BA optantes do Simples Nacional como ME/EPP, com NFS-e no padrão nacional. Estabelecimentos fora desse recorte ficam não suportados até decisão própria.",
+      "objective": "Criar a configuração fiscal por empresa e estabelecimento — perfil emissor, sugestões de cadastro, tipos de operação e combinações aprovadas — com validação, encryption e rotação segura, usando dados sintéticos.",
+      "scope": [
+        "Implementar FiscalIssuerProfile por estabelecimento (CRT/regime, município, inscrições, CNAE e referências de segredo) e provider config criptografada.",
+        "Cadastrar sugestões fiscais de serviços e mercadorias e tipos de operação; CFOP pertence ao tipo de operação, não à mercadoria.",
+        "Persistir combinações aprovadas (estabelecimento, tipo de operação, código/item, regime) com responsável, fundamento e vigência, conforme a entrada definida em AP-FISC-CORE-001.",
+        "Enviar combinação nova ou fora de vigência para fila de revisão do contador, sem preparar documento.",
+        "Validar formato, campos obrigatórios e combinações conhecidas: CSOSN apenas com CRT do Simples, CST nos demais regimes.",
+        "Em OS nova, exigir peça fornecida pela oficina em linha própria com valor fiscal; distinguir peça da oficina, peça do cliente e material consumido. O contrato v2 continua aceitando bundle; bundle com peça da oficina sem valor fiscal bloqueia a preparação e sinaliza revisão.",
+        "Recusar como não suportado estabelecimento fora do recorte de lançamento."
+      ],
+      "outOfScope": [
+        "Escolher regra tributária automaticamente.",
+        "Atestar que o enquadramento escolhido pelo contador está juridicamente correto.",
+        "Cadastrar as combinações reais da BMITAG (AP-FISC-ACCOUNTING-EXT-001).",
+        "Alterar o contrato FatoComercial v2.",
+        "Exibir segredo de volta."
+      ],
+      "expectedBehavior": "Preparação só ocorre com combinação aprovada e vigente; combinação nova vai para revisão. A revisão humana mostra o código de serviço sugerido ao lado da descrição do trabalho realizado na OS e exige confirmação. Serviço usa segredo descriptografado apenas em memória e registra auditoria sanitizada.",
+      "acceptanceCriteria": [
+        "Master key fica fora do banco.",
+        "Tenant A não referencia config de B.",
+        "Combinação ausente, não aprovada ou fora da vigência bloqueia preparação e gera item de revisão; alterações não reclassificam documentos históricos.",
+        "CSOSN/CST incoerente com o CRT do estabelecimento é recusado.",
+        "Peça da oficina sem linha própria e valor fiscal em OS nova bloqueia preparação, sem rateio automático.",
+        "Estabelecimento fora do recorte de lançamento é recusado como não suportado."
+      ],
+      "tests": [
+        "Encryption/rotação e negação tenant.",
+        "Duas empresas sintéticas com regimes diferentes; mesma mercadoria com tipos de operação diferentes gera CFOP diferente.",
+        "Combinação nova vai para revisão; combinação vencida bloqueia; bundle com peça da oficina sem valor fiscal bloqueia; documentos correlacionados à mesma OS quando aprovados."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Chaves exclusivas de staging.",
+          "Decisões fiscais sintéticas; a matriz da BMITAG não é pré-requisito."
+        ],
+        "steps": [
+          "Cadastrar/rotacionar config sintética.",
+          "Aprovar combinações sintéticas e tentar preparar com combinação ausente, vencida e nova.",
+          "Tentar leitura e uso cruzado."
+        ],
+        "expectedResultAndEvidence": [
+          "Segredo nunca retorna ou aparece em log.",
+          "Preparação só ocorre com combinação aprovada e vigente."
+        ],
+        "dataImpact": "Somente configs de teste.",
+        "cleanupAndRollback": [
+          "Revogar e remover secrets de staging."
+        ],
+        "stagingRestrictions": "Sem certificado real nem dados da BMITAG."
+      },
+      "likelyFiles": [
+        "crates/fiscal/",
+        "crates/secrets/",
+        "migrations/"
+      ],
+      "risks": [
+        "Master key no banco.",
+        "Segredo em log/erro.",
+        "Cadastro sugerido aceito sem aprovação, virando regra tributária de fato.",
+        "CFOP ou CST/CSOSN fixados na mercadoria."
+      ]
     },
     {
-      "id": "AP-FISC-NFSE-001", "title": "Implementar e homologar adapter NFS-e", "status": "ready", "blockedBy": ["AP-FISC-CONFIG-001"],
-      "context": "Ext é candidata, não conclusão; adapter precisa provar município e cenários BMITAG.",
-      "objective": "Implementar porta de serviço para emissão, consulta, cancelamento, XML/PDF e indeterminado.",
-      "scope": ["Criar adapter escolhido e contract tests.", "Executar sandbox/homologação sem documento real."],
-      "outOfScope": ["NF-e modelo 55.", "Autoemissão."],
+      "id": "AP-FISC-NFSE-001",
+      "title": "Implementar e homologar adapter NFS-e padrão nacional",
+      "status": "ready",
+      "blockedBy": [
+        "AP-FISC-CONFIG-001"
+      ],
+      "context": "ME/EPP do Simples Nacional usam o Emissor Nacional da NFS-e, inclusive por API, a partir de 1º de novembro de 2026 (Resolução CGSN nº 191). O recorte de lançamento usa só o padrão nacional; webservice municipal fica fora. A DPS é de responsabilidade do emitente, com série e número sequencial: o adapter controla ou obtém esses identificadores do provider com segurança. Provider é avaliado contra a matriz de providers do AutoBO (docs/providers/matriz-fiscal.md).",
+      "objective": "Escolher provider e implementar a porta de serviço no padrão nacional para emissão, consulta, cancelamento, XML/DANFSe e indeterminado.",
+      "scope": [
+        "Comparar providers candidatos em sandbox contra os itens obrigatórios da matriz de providers e registrar a escolha.",
+        "Criar adapter escolhido e contract tests.",
+        "Controlar ou obter série e número da DPS sem reutilizar nem perder número sem registro.",
+        "Executar sandbox/homologação sem documento real."
+      ],
+      "outOfScope": [
+        "NF-e modelo 55 e NFC-e modelo 65.",
+        "Webservice municipal (Nota Salvador).",
+        "Substituição de NFS-e, adiada para ticket próprio.",
+        "Autoemissão."
+      ],
       "expectedBehavior": "NFS-e converge sem reemissão cega após timeout.",
-      "acceptanceCriteria": ["Rejeição é acionável.", "XML/PDF e cancelamento são preservados."],
-      "tests": ["Issued/rejected/indeterminate/consulta/cancelamento.", "Assinatura/credencial inválida."],
-      "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de homologação.","Forçar timeout e consultar antes de retry."],"expectedResultAndEvidence":["Um documento por referência e artefatos recuperáveis."],"dataImpact":"Somente documentos de homologacao.","cleanupAndRollback":["Cancelar fixtures quando suportado e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
-      "likelyFiles": ["crates/fiscal/providers/", "tests/providers/nfse/"],
-      "risks": ["Assumir cobertura nacional.", "Duplicar em indeterminado."]
+      "acceptanceCriteria": [
+        "Rejeição é acionável.",
+        "XML/DANFSe e cancelamento são preservados.",
+        "Série e número da DPS não se repetem entre tentativas e workers."
+      ],
+      "tests": [
+        "Issued/rejected/indeterminate/consulta/cancelamento.",
+        "Assinatura/credencial inválida.",
+        "Reserva concorrente de número de DPS."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Sandbox e decisões fiscais sintéticas aprovadas em AP-FISC-CONFIG-001; a matriz da BMITAG não é pré-requisito."
+        ],
+        "steps": [
+          "Executar casos de homologação.",
+          "Forçar timeout e consultar antes de retry."
+        ],
+        "expectedResultAndEvidence": [
+          "Um documento por referência e artefatos recuperáveis."
+        ],
+        "dataImpact": "Somente documentos de homologacao.",
+        "cleanupAndRollback": [
+          "Cancelar fixtures quando suportado e revogar credenciais."
+        ],
+        "stagingRestrictions": "Nenhum documento real."
+      },
+      "likelyFiles": [
+        "crates/fiscal/providers/",
+        "tests/providers/nfse/"
+      ],
+      "risks": [
+        "Assumir cobertura fora do recorte de lançamento.",
+        "Duplicar em indeterminado.",
+        "Delegar a numeração da DPS ao provider sem confirmar que ele a controla."
+      ]
     },
     {
-      "id": "AP-FISC-NFE-001", "title": "Implementar e homologar adapter NF-e", "status": "ready", "blockedBy": ["AP-FISC-CONFIG-001"],
-      "context": "O fornecimento de mercadorias e de peças/partes empregadas sujeito ao ICMS requer documento fiscal próprio quando aplicável, mesmo com preço único na OS. A matriz contábil aprovada identifica o enquadramento e os valores necessários; o núcleo não infere dispensa ou exigência de NF-e apenas pelo tipo do item ou pela forma de cobrança.",
+      "id": "AP-FISC-NFE-001",
+      "title": "Implementar e homologar adapter NF-e",
+      "status": "ready",
+      "blockedBy": [
+        "AP-FISC-CONFIG-001"
+      ],
+      "context": "O fornecimento de mercadorias e de peças/partes empregadas sujeito ao ICMS requer documento fiscal próprio quando aplicável, mesmo com preço único na OS. A matriz contábil aprovada identifica o enquadramento e os valores necessários; o núcleo não infere dispensa ou exigência de NF-e apenas pelo tipo do item ou pela forma de cobrança. Este ticket cobre NF-e modelo 55; a aplicação de NFC-e modelo 65 é decidida em AP-FISC-NFCE-ADR-001 e, para cada cliente, pelo seu contador.",
       "objective": "Selecionar e implementar provider para autorização, consulta, cancelamento, inutilização e contingência aplicável.",
-      "scope": ["Avaliar provider pela matriz fiscal.", "Implementar adapter e contract tests com XML como artefato principal."],
-      "outOfScope": ["NFS-e.", "Documento real sem autorização."],
+      "scope": [
+        "Avaliar provider pela matriz fiscal.",
+        "Implementar adapter e contract tests com XML como artefato principal."
+      ],
+      "outOfScope": [
+        "NFS-e.",
+        "NFC-e modelo 65.",
+        "Documento real sem autorização."
+      ],
       "expectedBehavior": "Quando o cenário fundamentado exigir NF-e, a emissão converge com chave, XML, DANFE e eventos auditáveis; se a OS de preço único não trouxer os valores fiscais necessários, a preparação fica pendente de revisão, sem rateio automático.",
-      "acceptanceCriteria": ["Timeout consulta antes de retry.", "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único não dispensa NF-e exigida para peças/partes fornecidas."],
-      "tests": ["Autorização/rejeição/consulta/cancelamento.", "Indeterminado, tenant A/B e venda mista."],
-      "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de mercadoria e misto.","Forçar timeout e reconciliação."],"expectedResultAndEvidence":["Sem duplicidade e artefatos completos."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
-      "likelyFiles": ["crates/fiscal/providers/", "tests/providers/nfe/"],
-      "risks": ["Provider não cobrir UF/regime.", "Misturar NF-e e NFS-e."]
+      "acceptanceCriteria": [
+        "Timeout consulta antes de retry.",
+        "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único não dispensa NF-e exigida para peças/partes fornecidas."
+      ],
+      "tests": [
+        "Autorização/rejeição/consulta/cancelamento.",
+        "Indeterminado, tenant A/B e venda mista."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Sandbox e decisões fiscais sintéticas aprovadas em AP-FISC-CONFIG-001; a matriz da BMITAG não é pré-requisito."
+        ],
+        "steps": [
+          "Executar casos de mercadoria e misto.",
+          "Forçar timeout e reconciliação."
+        ],
+        "expectedResultAndEvidence": [
+          "Sem duplicidade e artefatos completos."
+        ],
+        "dataImpact": "Somente homologacao.",
+        "cleanupAndRollback": [
+          "Cancelar fixtures e revogar credenciais."
+        ],
+        "stagingRestrictions": "Nenhum documento real."
+      },
+      "likelyFiles": [
+        "crates/fiscal/providers/",
+        "tests/providers/nfe/"
+      ],
+      "risks": [
+        "Provider não cobrir UF/regime.",
+        "Misturar NF-e e NFS-e."
+      ]
+    },
+    {
+      "id": "AP-FISC-NFCE-ADR-001",
+      "title": "Decidir escopo de NFC-e modelo 65 no lançamento",
+      "status": "ready",
+      "blockedBy": [],
+      "context": "A venda de balcão a consumidor final pode exigir NFC-e modelo 65; a Sefaz Bahia mantém cronograma de obrigatoriedade que inclui estabelecimentos do Simples, com exceções. O plano atual só prevê NF-e modelo 55.",
+      "objective": "Decidir se NFC-e entra no recorte de lançamento e em quais vendas cabe modelo 65 ou 55.",
+      "scope": [
+        "Levantar com contabilidade as vendas típicas das oficinas do recorte e o documento de cada uma.",
+        "Conferir o cronograma de NFC-e da Sefaz Bahia e suas exceções.",
+        "Registrar a decisão em docs/fiscal/ e, se NFC-e entrar, criar ticket de adapter separado."
+      ],
+      "outOfScope": [
+        "Implementar adapter.",
+        "Substituir AP-FISC-NFE-001 sem a distinção contábil."
+      ],
+      "expectedBehavior": "Decisão escrita e fundamentada; nenhum código muda por este ticket.",
+      "acceptanceCriteria": [
+        "Decisão registra quais vendas usam modelo 55 e quais usam 65 no recorte, com fundamento contábil.",
+        "Se NFC-e entrar no lançamento, existe ticket de adapter com dependências corretas."
+      ],
+      "tests": [
+        "Revisão cruzada com AP-FISC-NFE-001 e AP-FISC-CONFIG-001."
+      ],
+      "testInstructions": {
+        "prerequisites": [
+          "Contabilidade disponível."
+        ],
+        "steps": [
+          "Revisar exemplos sintéticos de venda.",
+          "Registrar decisão e aceite humano."
+        ],
+        "expectedResultAndEvidence": [
+          "Decisão versionada em docs/fiscal/."
+        ],
+        "dataImpact": "Nenhum.",
+        "cleanupAndRollback": [
+          "Reabrir se a regra estadual mudar."
+        ],
+        "stagingRestrictions": "Não usar documento fiscal real."
+      },
+      "likelyFiles": [
+        "docs/fiscal/",
+        ".workflow/workflow.json"
+      ],
+      "risks": [
+        "Lançar só NF-e 55 para vendas que exigem NFC-e.",
+        "Extrapolar decisão de um cliente para todos."
+      ]
     },
     {
       "id": "AP-FISC-GATE-001",
@@ -356,8 +650,8 @@
       "context": "Este gate comprova o backend fiscal em homologação; a jornada integrada do AutoOS será comprovada em AO-FISC-GATE-001.",
       "objective": "Provar NFS-e, NF-e, operação mista, artefatos, rejeição, consulta, timeout e cancelamento em ambiente apropriado.",
       "scope": [
-        "Executar gate completo em homologacao.",
-        "Produzir Go/No-Go com contabilidade."
+        "Executar gate completo em homologação com decisões sintéticas.",
+        "Produzir Go/No-Go técnico; a aprovação fiscal de cada cliente fica no aceite próprio do cliente."
       ],
       "outOfScope": [
         "Emitir primeiro documento real sem autorização separada.",
@@ -365,9 +659,10 @@
       ],
       "expectedBehavior": "Fiscal backend fica pronto para a revisão humana no AutoOS, sem depender de UI nova no AutoBO.",
       "acceptanceCriteria": [
-        "Cenários obrigatórios de serviço, produto, misto com cobrança separada e preço único com peça incluída passam em homologação conforme decisões fiscais aprovadas.",
+        "Cenários de serviço, produto e misto itemizado passam em homologação com combinações sintéticas aprovadas; documentos independentes ficam ligados à mesma OS e o sucesso parcial é visível.",
+        "Combinação nova vai para revisão e bundle com peça da oficina sem valor fiscal não prepara documento.",
         "Nenhum segredo ou payload fiscal integral aparece em logs.",
-        "Go/No-Go documenta lacunas e validação contábil."
+        "Go/No-Go documenta lacunas técnicas."
       ],
       "tests": [
         "Suite fiscal do Plano Diretor.",
@@ -375,7 +670,7 @@
       ],
       "testInstructions": {
         "prerequisites": [
-          "Adapters homologados e contabilidade disponível."
+          "Adapters homologados e decisões fiscais sintéticas."
         ],
         "steps": [
           "Executar matriz completa.",
@@ -396,7 +691,7 @@
       ],
       "risks": [
         "Gate sem cenário misto.",
-        "Homologar sem matriz contábil.",
+        "Tratar homologação com decisões sintéticas como aprovação fiscal de cliente.",
         "Confundir homologação backend com produção real BMITAG."
       ]
     },
@@ -732,7 +1027,7 @@
         "AP-FISC-ACCOUNTING-EXT-001"
       ],
       "objective": "Conduzir piloto autorizado com pelo menos uma NFS-e e uma NF-e reais, consulta, artefatos, vínculo à OS e tratamento de falha.",
-      "context": "Homologação backend e jornada AutoOS ainda não demonstram emissão real e rastreável na operação BMITAG.",
+      "context": "Homologação backend e jornada AutoOS ainda não demonstram emissão real e rastreável na operação BMITAG. A configuração aprovada em AP-FISC-ACCOUNTING-EXT-001 ativa a BMITAG; cada cliente futuro repete o próprio aceite sem alterar o código do produto.",
       "expectedBehavior": "Conduzir piloto autorizado com pelo menos uma NFS-e e uma NF-e reais, consulta, artefatos, vínculo à OS e tratamento de falha.",
       "scope": [
         "Obter autorização humana e revisão contábil para os cenários escolhidos.",
@@ -758,7 +1053,7 @@
           "Usar fixtures sintéticas e serviços falsos; não inserir dados ou credenciais BMITAG em testes automatizados."
         ],
         "steps": [
-          "Antes de qualquer ação real, obter autorização explícita e confirmar ambiente, certificado e matriz contábil.",
+          "Antes de qualquer ação real, obter autorização explícita e confirmar ambiente, certificado e combinações aprovadas da BMITAG (AP-FISC-ACCOUNTING-EXT-001).",
           "Executar o piloto manualmente; guardar apenas IDs e evidência redigida; registrar consulta, XML/documento e Go/No-Go."
         ],
         "expectedResultAndEvidence": [
