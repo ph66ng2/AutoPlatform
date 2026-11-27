@@ -40,7 +40,7 @@ pub fn prepare(
     )
     .map_err(|_| FiscalError::Database)?;
     let profile = tx.query_opt(
-        "SELECT 1 FROM fiscal.issuer_profiles WHERE company_id=$1 AND id=$2 AND establishment_id=$3",
+        "SELECT 1 FROM fiscal.issuer_profiles WHERE company_id=$1 AND id=$2 AND establishment_id=$3 AND review_status='ready'",
         &[&plan.company_id, &profile_id, &plan.establishment_id],
     ).map_err(|_| FiscalError::Database)?;
     if profile.is_none() {

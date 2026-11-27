@@ -109,14 +109,15 @@ pub struct FiscalDecision {
     pub documents: Vec<DocumentPlan>,
 }
 
-/// AP-FISC-CONFIG-001 implementará este resolvedor sobre decisões persistidas.
-/// O consumidor não pode fornecer uma decisão arbitrária em uma chamada HTTP.
+/// Decisões persistidas são vinculadas ao fato faturável: valores e itens de
+/// uma OS nunca são reutilizados automaticamente em outra.
 pub trait DecisionResolver {
     fn approved_decision(
         &self,
         company_id: Uuid,
         establishment_id: Uuid,
         scenario: &str,
+        fact: &serde_json::Value,
         at_epoch: i64,
     ) -> Result<Option<FiscalDecision>, FiscalError>;
 }
@@ -176,6 +177,7 @@ pub enum FiscalError {
     NotFound,
     InvalidTransition,
     XmlRequired,
+    Crypto,
     Database,
 }
 
@@ -184,13 +186,18 @@ impl std::fmt::Display for FiscalError {
         f.write_str(match self {
             Self::Denied => "permissão FISCAL necessária",
             Self::InvalidFact => "fato comercial inválido",
-            Self::DecisionMissing => "decisão fiscal aprovada ausente",
-            Self::DecisionNotApplicable => "decisão fiscal fora do escopo ou vigência",
-            Self::ValuesMissing => "valores fiscais explícitos ausentes ou inconsistentes",
+            Self::DecisionMissing => "emissão pendente de revisão: decisão fiscal aprovada ausente",
+            Self::DecisionNotApplicable => {
+                "emissão pendente de revisão: decisão fiscal fora do escopo ou vigência"
+            }
+            Self::ValuesMissing => {
+                "emissão pendente de revisão: valores fiscais explícitos ausentes ou inconsistentes"
+            }
             Self::Conflict => "snapshot ou plano conflitante",
             Self::NotFound => "documento não encontrado",
             Self::InvalidTransition => "transição fiscal inválida",
             Self::XmlRequired => "XML obrigatório para autorização",
+            Self::Crypto => "falha no segredo fiscal",
             Self::Database => "falha no armazenamento fiscal",
         })
     }

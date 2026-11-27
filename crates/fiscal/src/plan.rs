@@ -43,7 +43,7 @@ pub fn prepare_plan(
         return Err(FiscalError::Denied);
     }
     let decision = resolver
-        .approved_decision(company_id, establishment_id, scenario, at_epoch)?
+        .approved_decision(company_id, establishment_id, scenario, fact, at_epoch)?
         .ok_or(FiscalError::DecisionMissing)?;
     validate_decision(
         &decision,

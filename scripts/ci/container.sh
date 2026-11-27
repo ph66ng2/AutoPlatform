@@ -78,7 +78,8 @@ for _attempt in $(seq 1 40); do
 done
 docker exec "$postgres_container" pg_isready -h 127.0.0.1 -U "$pg_user" -d autoplatform >/dev/null
 for migration in "$root"/migrations/[0-9][0-9][0-9][0-9]_*.sql; do
-  if [[ "${migration##*/}" == 0007_commercial_fact_keys.sql ]]; then
+  if [[ "${migration##*/}" == 0007_commercial_fact_keys.sql ||
+        "${migration##*/}" == 0008_fiscal_config.sql ]]; then
     continue
   fi
   docker exec -i "$postgres_container" psql -v ON_ERROR_STOP=1 -U "$pg_user" -d autoplatform < "$migration" >/dev/null
@@ -108,6 +109,7 @@ wait_http "http://127.0.0.1:$((port + 2))/health"
 actual=$(curl --silent --output "$response_file" --write-out '%{http_code}' "http://127.0.0.1:$((port + 2))/ready")
 [[ "$actual" == 503 ]]
 docker exec -i "$postgres_container" psql -v ON_ERROR_STOP=1 -U "$pg_user" -d autoplatform < "$root/migrations/0007_commercial_fact_keys.sql" >/dev/null
+docker exec -i "$postgres_container" psql -v ON_ERROR_STOP=1 -U "$pg_user" -d autoplatform < "$root/migrations/0008_fiscal_config.sql" >/dev/null
 wait_http "http://127.0.0.1:$((port + 2))/ready"
 issue_token() {
   AP_CI_JWT_SECRET="$jwt_secret" AP_CI_ACCOUNT_ID="$1" python3 - <<'PY'
