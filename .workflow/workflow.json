@@ -234,15 +234,15 @@
     {
       "id": "AP-FISC-ACCOUNTING-EXT-001", "title": "Receber matriz fiscal validada pela contabilidade", "status": "ready", "blockedBy": [],
       "context": "Município, regime, CNAEs, CFOPs, NCMs, CST/CSOSN e retenções precisam de validação BMITAG. A inspeção de leitura do Gerencie Aqui em 2026-10-08 encontrou OS com totais separados, NF-e em produção e cadastro de manutenção com peça marcado como Produto e NCM provisório; não encontrou NFS-e nos períodos consultados nem comprovou vínculo OS-documento. O responsável informou em 2026-10-14 que todas as OS de serviço do piloto cobram apenas mão de obra e, quando há troca, usam peças do cliente; confirmou também que a orientação escrita de NFS-e única para a OS 63 veio da contabilidade. Em 2026-10-15 escolheu 14.02 como referência operacional após conferir uma NFS-e anterior. Em 2026-10-18 apresentou texto contábil de 14.02 para diagnóstico e orientação, sem conserto/manutenção ou fornecimento de peças; depois afirmou que a contabilidade também confirmou 14.02 para a OS 63, descrita antes como manutenção/reparo com peças do cliente. A orientação escrita anterior para essa OS citou 14.01 em princípio. Falta fundamento atualizado que concilie esses fatos e códigos, além dos demais campos da matriz, antes da emissão. Evidências e lacunas em docs/fiscal/AP-FISC-ACCOUNTING-EXT-001-gerencie-aqui.md.",
-      "objective": "Registrar decisões contábeis que condicionam configuração e providers fiscais.",
+      "objective": "Registrar decisões contábeis que condicionam a ativação das regras BMITAG e a emissão real, sem bloquear construção e homologação sintéticas.",
       "scope": ["Receber matriz assinada/revisada.", "Mapear cenários distintos de serviço sem peça, OS com peça do cliente e cobrança apenas de mão de obra, OS com serviço e peça da BMITAG cobrados em linhas separadas, OS com peça da BMITAG incluída em preço único e venda de mercadoria fora da OS; distinguir peças/partes fornecidas de materiais consumidos e indicar enquadramento, base de cálculo e documentos exigidos em cada caso."],
       "outOfScope": ["Inventar regra tributária.", "Emitir documento."],
-      "expectedBehavior": "Ticket pode avançar na preparação da matriz piloto com o relato operacional e os documentos já recebidos. O aceite e o status merged exigem confirmação escrita da contabilidade para cada cenário praticado, incluindo o código de serviço aplicável; configuração e emissão permanecem bloqueadas enquanto faltar decisão aprovada e vigente.",
+      "expectedBehavior": "Ticket pode avançar na preparação da matriz piloto com o relato operacional e os documentos já recebidos. O aceite e o status merged exigem confirmação escrita da contabilidade para cada cenário praticado, incluindo o código de serviço aplicável. Configuração sintética e homologação técnica podem avançar; ativação da configuração BMITAG e emissão real permanecem bloqueadas enquanto faltar decisão aprovada e vigente.",
       "acceptanceCriteria": ["Matriz cobre cenários piloto e certificados; cenário não praticado pela BMITAG fica marcado como não aplicável ao piloto com confirmação contábil, sem exigir criação de OS real.", "Exemplos redigidos vinculam OS, documentos emitidos e decisão escrita do contador para serviço sem peça, manutenção com peça do cliente/mão de obra, manutenção com peça da BMITAG/preço único, manutenção com peça da BMITAG cobrada separadamente e venda de mercadoria fora da OS, quando praticados.", "Para manutenção com peças, a contabilidade enfrenta expressamente a ressalva do subitem 14.01 da LC 116/2003, inclusive no preço único; se houver ISS e ICMS, define critério documental e de valoração sem inventar rateio.", "Lacunas e limitações estão explícitas."],
       "tests": ["Walkthrough com exemplos sintéticos.", "Revisão cruzada com .workflow/FISCAL_PROD_ROADMAP.md e tickets fiscais dependentes."],
       "testInstructions": {"prerequisites":["Relato operacional, exemplos e orientação escrita da contabilidade para a OS 63 já recebidos; vínculos redigidos entre OS e nota(s) e decisões restantes são necessários para o aceite."],"steps":["Revisar cenários e lacunas de docs/fiscal/AP-FISC-ACCOUNTING-EXT-001-gerencie-aqui.md.","Registrar aceite humano e vigência da decisão."],"expectedResultAndEvidence":["Matriz versionada sem dados pessoais desnecessários, com referência redigida a OS/documentos e fundamento contábil."],"dataImpact":"Nenhum.","cleanupAndRollback":["Reabrir se a premissa contábil mudar."],"stagingRestrictions":"Não usar documento fiscal real."},
       "likelyFiles": ["docs/fiscal/", ".workflow/workflow.json"],
-      "risks": ["Começar provider sem matriz.", "Tomar tipo de item, NCM provisório ou configuração legado como validação contábil.", "Extrapolar BMITAG para todo Brasil."]
+      "risks": ["Usar matriz sintética para emissão real.", "Tomar tipo de item, NCM provisório ou configuração legado como validação contábil.", "Extrapolar BMITAG para todo Brasil."]
     },
     {
       "id": "AP-FISC-CORE-001",
@@ -306,28 +306,28 @@
       ]
     },
     {
-      "id": "AP-FISC-CONFIG-001", "title": "Implementar configuração fiscal server-side", "status": "ready", "blockedBy": ["AP-FISC-CORE-001", "AP-FISC-ACCOUNTING-EXT-001"],
-      "context": "Certificados e credenciais fiscais não podem chegar ao desktop.",
+      "id": "AP-FISC-CONFIG-001", "title": "Implementar configuração fiscal server-side", "status": "ready", "blockedBy": ["AP-FISC-CORE-001"],
+      "context": "Certificados e credenciais fiscais não podem chegar ao desktop. Construção e homologação usam empresas, decisões e credenciais sintéticas; a matriz BMITAG aprovada só é pré-requisito para ativação real no AP-FISC-PROD-001.",
       "objective": "Criar configuração por empresa com validação, encryption e rotação segura.",
-      "scope": ["Implementar FiscalIssuerProfile e provider config criptografada.", "Persistir decisões fiscais versionadas por empresa/estabelecimento e cenário, com aprovação e vigência, conforme a entrada definida em AP-FISC-CORE-001.", "Validar matriz contábil antes de READY_FOR_REVIEW."],
+      "scope": ["Implementar FiscalIssuerProfile e provider config criptografada.", "Persistir decisões fiscais versionadas por empresa/estabelecimento e cenário, com aprovação e vigência, conforme a entrada definida em AP-FISC-CORE-001.", "Modelar estabelecimento, regime, itens, tipos de operação e combinações aprovadas; somente decisões aprovadas e vigentes alimentam o resolvedor.", "Exibir pendência de revisão quando faltar decisão ou valoração, sem atribuir códigos à BMITAG."],
       "outOfScope": ["Escolher regra tributária automaticamente.", "Exibir segredo de volta."],
-      "expectedBehavior": "Serviço usa segredo descriptografado apenas em memória e registra auditoria sanitizada.",
-      "acceptanceCriteria": ["Master key fica fora do banco.", "Tenant A não referencia config de B.", "Decisão ausente, não aprovada ou fora da vigência bloqueia preparação; alterações não reclassificam documentos históricos."],
+      "expectedBehavior": "Serviço usa segredo descriptografado apenas em memória e registra auditoria sanitizada. Cadastro de teste pode ser aprovado por ator sintético; cadastro BMITAG sem parecer continua pendente e não autoriza emissão.",
+      "acceptanceCriteria": ["Master key fica fora do banco.", "Tenant A não referencia config de B.", "Decisão ausente, não aprovada ou fora da vigência bloqueia preparação com mensagem de revisão; alterações não reclassificam documentos históricos.", "Campos e aprovações por estabelecimento, regime, item e operação aceitam fixtures sintéticas sem preencher códigos BMITAG."],
       "tests": ["Encryption/rotação e negação tenant.", "Config incompleta bloqueia preparação.", "Decisões diferentes por empresa e cenário; preço fechado sem fundamentação ou valoração exigida bloqueia preparação; documentos correlacionados quando aprovados."],
-      "testInstructions": {"prerequisites":["Chaves exclusivas de staging."],"steps":["Cadastrar/rotacionar config sintética.","Tentar leitura e uso cruzado."],"expectedResultAndEvidence":["Segredo nunca retorna ou aparece em log."],"dataImpact":"Somente configs de teste.","cleanupAndRollback":["Revogar e remover secrets de staging."],"stagingRestrictions":"Sem certificado real."},
+      "testInstructions": {"prerequisites":["Chaves exclusivas de staging e empresas/decisões sintéticas; matriz BMITAG não é pré-requisito."],"steps":["Cadastrar/rotacionar config sintética e decisões com vigência.","Tentar leitura e uso cruzado; preparar cenários sem decisão ou valoração.","Executar checks Rust, migrations e testes tenant A/B em PostgreSQL descartável."],"expectedResultAndEvidence":["Segredo nunca retorna ou aparece em log; emissão fica pendente de revisão sem decisão aprovada."],"dataImpact":"Somente configs de teste.","cleanupAndRollback":["Revogar e remover secrets de staging."],"stagingRestrictions":"Sem certificado real ou regra BMITAG ativada."},
       "likelyFiles": ["crates/fiscal/", "crates/secrets/", "migrations/"],
       "risks": ["Master key no banco.", "Segredo em log/erro."]
     },
     {
       "id": "AP-FISC-NFSE-001", "title": "Implementar e homologar adapter NFS-e", "status": "ready", "blockedBy": ["AP-FISC-CONFIG-001"],
-      "context": "Ext é candidata, não conclusão; adapter precisa provar município e cenários BMITAG.",
+      "context": "API oficial e provedores são candidatos; comparar cobertura, sequência de DPS, consulta, XML, credenciais por empresa e custo em homologação sintética. Cobertura BMITAG real será validada após a matriz.",
       "objective": "Implementar porta de serviço para emissão, consulta, cancelamento, XML/PDF e indeterminado.",
-      "scope": ["Criar adapter escolhido e contract tests.", "Executar sandbox/homologação sem documento real."],
+      "scope": ["Comparar API oficial e provedores com critérios técnicos e custo documentados.", "Criar adapter escolhido e contract tests.", "Executar sandbox/homologação com dados sintéticos, inclusive sequência de DPS por empresa/estabelecimento, sem documento real."],
       "outOfScope": ["NF-e modelo 55.", "Autoemissão."],
       "expectedBehavior": "NFS-e converge sem reemissão cega após timeout.",
       "acceptanceCriteria": ["Rejeição é acionável.", "XML/PDF e cancelamento são preservados."],
       "tests": ["Issued/rejected/indeterminate/consulta/cancelamento.", "Assinatura/credencial inválida."],
-      "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de homologação.","Forçar timeout e consultar antes de retry."],"expectedResultAndEvidence":["Um documento por referência e artefatos recuperáveis."],"dataImpact":"Somente documentos de homologacao.","cleanupAndRollback":["Cancelar fixtures quando suportado e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
+      "testInstructions": {"prerequisites":["Sandbox e decisões fiscais sintéticas aprovadas; matriz BMITAG não é pré-requisito."],"steps":["Executar serviço, cancelamento, rejeição e duplicidade em homologação.","Forçar timeout e consultar antes de retry; verificar sequência de DPS, XML e credenciais segregadas."],"expectedResultAndEvidence":["Um documento por referência, artefatos recuperáveis e comparativo técnico/custo."],"dataImpact":"Somente documentos de homologacao.","cleanupAndRollback":["Cancelar fixtures quando suportado e revogar credenciais."],"stagingRestrictions":"Nenhum documento real ou decisão BMITAG ativada."},
       "likelyFiles": ["crates/fiscal/providers/", "tests/providers/nfse/"],
       "risks": ["Assumir cobertura nacional.", "Duplicar em indeterminado."]
     },
@@ -335,12 +335,12 @@
       "id": "AP-FISC-NFE-001", "title": "Implementar e homologar adapter NF-e", "status": "ready", "blockedBy": ["AP-FISC-CONFIG-001"],
       "context": "O fornecimento de mercadorias e de peças/partes empregadas sujeito ao ICMS requer documento fiscal próprio quando aplicável, mesmo com preço único na OS. A matriz contábil aprovada identifica o enquadramento e os valores necessários; o núcleo não infere dispensa ou exigência de NF-e apenas pelo tipo do item ou pela forma de cobrança.",
       "objective": "Selecionar e implementar provider para autorização, consulta, cancelamento, inutilização e contingência aplicável.",
-      "scope": ["Avaliar provider pela matriz fiscal.", "Implementar adapter e contract tests com XML como artefato principal."],
+      "scope": ["Comparar integração direta e provedores quanto a cobertura técnica, consulta, XML, credenciais por empresa e custo com decisões sintéticas.", "Implementar adapter e contract tests com XML como artefato principal; avaliar NFC-e apenas se o escopo for confirmado."],
       "outOfScope": ["NFS-e.", "Documento real sem autorização."],
       "expectedBehavior": "Quando o cenário fundamentado exigir NF-e, a emissão converge com chave, XML, DANFE e eventos auditáveis; se a OS de preço único não trouxer os valores fiscais necessários, a preparação fica pendente de revisão, sem rateio automático.",
       "acceptanceCriteria": ["Timeout consulta antes de retry.", "Quando a decisão fiscal aprovada exigir NF-e e NFS-e, os documentos ficam correlacionados sem acoplá-los; preço único não dispensa NF-e exigida para peças/partes fornecidas."],
       "tests": ["Autorização/rejeição/consulta/cancelamento.", "Indeterminado, tenant A/B e venda mista."],
-      "testInstructions": {"prerequisites":["Sandbox e matriz fiscal aprovados."],"steps":["Executar casos de mercadoria e misto.","Forçar timeout e reconciliação."],"expectedResultAndEvidence":["Sem duplicidade e artefatos completos."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures e revogar credenciais."],"stagingRestrictions":"Nenhum documento real."},
+      "testInstructions": {"prerequisites":["Sandbox e decisões fiscais sintéticas aprovadas; matriz BMITAG não é pré-requisito."],"steps":["Executar mercadoria e misto com peça do cliente versus peça vendida pela oficina, discriminação e valores explícitos.","Forçar timeout, consulta, cancelamento, falha e tentativa duplicada."],"expectedResultAndEvidence":["Sem duplicidade, artefatos completos e comparativo técnico/custo."],"dataImpact":"Somente homologacao.","cleanupAndRollback":["Cancelar fixtures e revogar credenciais."],"stagingRestrictions":"Nenhum documento real ou decisão BMITAG ativada."},
       "likelyFiles": ["crates/fiscal/providers/", "tests/providers/nfe/"],
       "risks": ["Provider não cobrir UF/regime.", "Misturar NF-e e NFS-e."]
     },
@@ -357,7 +357,7 @@
       "objective": "Provar NFS-e, NF-e, operação mista, artefatos, rejeição, consulta, timeout e cancelamento em ambiente apropriado.",
       "scope": [
         "Executar gate completo em homologacao.",
-        "Produzir Go/No-Go com contabilidade."
+        "Produzir Go/No-Go técnico da homologação sintética; reservar aceite contábil BMITAG para AP-FISC-PROD-001."
       ],
       "outOfScope": [
         "Emitir primeiro documento real sem autorização separada.",
@@ -365,9 +365,9 @@
       ],
       "expectedBehavior": "Fiscal backend fica pronto para a revisão humana no AutoOS, sem depender de UI nova no AutoBO.",
       "acceptanceCriteria": [
-        "Cenários obrigatórios de serviço, produto, misto com cobrança separada e preço único com peça incluída passam em homologação conforme decisões fiscais aprovadas.",
+        "Cenários sintéticos de serviço, produto, misto com cobrança separada e preço único com peça incluída passam em homologação conforme decisões fiscais sintéticas aprovadas; peça do cliente é distinguida de peça vendida pela oficina e preço único sem valoração explícita fica pendente.",
         "Nenhum segredo ou payload fiscal integral aparece em logs.",
-        "Go/No-Go documenta lacunas e validação contábil."
+        "Go/No-Go técnico documenta lacunas e deixa validação contábil BMITAG pendente para o piloto real."
       ],
       "tests": [
         "Suite fiscal do Plano Diretor.",
@@ -375,11 +375,11 @@
       ],
       "testInstructions": {
         "prerequisites": [
-          "Adapters homologados e contabilidade disponível."
+          "Adapters homologados, empresas e decisões sintéticas; contabilidade BMITAG não é pré-requisito."
         ],
         "steps": [
-          "Executar matriz completa.",
-          "Produzir relatório e decisão humana."
+          "Executar matriz sintética completa, inclusive cancelamento, falha, timeout e duplicidade.",
+          "Produzir relatório técnico e decisão humana sobre o gate de homologação."
         ],
         "expectedResultAndEvidence": [
           "Go/No-Go rastreável e sanitizado."
@@ -396,7 +396,7 @@
       ],
       "risks": [
         "Gate sem cenário misto.",
-        "Homologar sem matriz contábil.",
+        "Usar matriz sintética como se fosse parecer BMITAG.",
         "Confundir homologação backend com produção real BMITAG."
       ]
     },

@@ -113,6 +113,7 @@ impl DecisionResolver for Resolver {
         _company: Uuid,
         _establishment: Uuid,
         _scenario: &str,
+        _fact: &Value,
         _at: i64,
     ) -> Result<Option<FiscalDecision>, FiscalError> {
         Ok(self.0.clone())
@@ -264,6 +265,15 @@ fn tenant_isolation_concurrent_prepare_and_state_machine() {
         consult(&mut client, session(), old_id, &recovered).expect("old in-flight recovery"),
         DocumentState::Authorized
     );
+    let sql = fs::read_to_string(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../migrations/0008_fiscal_config.sql"),
+    )
+    .expect("migration 0008");
+    client
+        .batch_execute(&sql)
+        .expect("additive config migration");
+    client.batch_execute("UPDATE fiscal.issuer_profiles SET municipality_ibge_code='0000000', tax_regime='synthetic', review_status='ready'")
+        .expect("reviewed synthetic profiles");
     let fact = fixture("mista-preco-unico.json");
     let resolver = Resolver(Some(decision(&fact, DocumentKind::Nfse, "14.02")));
     let barrier = Arc::new(Barrier::new(2));
